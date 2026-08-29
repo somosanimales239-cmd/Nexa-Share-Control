@@ -1,22 +1,23 @@
-NEXASHARECONTROL 1.0.0 - NEXA MANUAL DELIVERY READY
+NexaShareControl 1.0.1 - COMPLETE REPLACEMENT
 
-Final installed executable: NexaShareControl.exe
-Target: Windows x64
-Application version: 1.0.0
+PURPOSE OF THIS RELEASE
+- Fixes installed application silently closing/not opening.
+- Main window now opens BEFORE native helper/network initialization.
+- Native helper, tray, transport, security, or hotkey failure can no longer close the whole application.
+- Adds dedicated NexaShareControl Electron user-data isolation.
+- Adds startup issue reporting in the application and Diagnostics.
+- Does NOT modify or depend on Nexa AI Local Bridge, Nexa Local, Browser Relay, SFTP Publisher, or existing Unity projects.
 
-This package uses the Nexa App Builder Pro Windows workflow contract:
-- Resolve application version / NEXA_APPLICATION_VERSION_METADATA_V1
-- Dynamic Node runtime resolution
-- Portable dependency lock generation
-- validate:delivery
-- validate:project
-- npm test
-- ui:smoke
-- Build installer and portable app
-- NEXA_WINDOWS_ARTIFACT_DELIVERY_V3
+MANUAL DELIVERY
+1. Upload this ONE ZIP as a complete source replacement for Nexa Share Control.
+2. Do not combine with 1.0.0 patches.
+3. Apply staged files once.
+4. Confirm application version 1.0.1.
+5. Run Local build validation.
+6. Push to GitHub & Build.
+7. Install NexaShareControl Setup 1.0.1 over the previous version.
 
-Required source scripts include build:win and verify:artifacts.
-Electron output directory is release/ so Nexa Manual Delivery can normalize and verify Installer, Portable and Windows ZIP artifacts.
-
-ISOLATION:
-This project is independent. It must not modify Nexa Local, Nexa AI Local Bridge, Nexa ChatGPT Browser Relay 1.6.1, SFTP Publisher, Chrome extensions, or Unity projects.
+EXPECTED STARTUP
+- NexaShareControl window must open even if the native helper has a problem.
+- If a background component fails, the application stays open and displays the exact issue.
+- Diagnostics reports the helper path, user-data path, and startup issues.

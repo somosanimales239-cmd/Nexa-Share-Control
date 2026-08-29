@@ -1,4 +1,4 @@
-# NexaShareControl 1.0.0
+# NexaShareControl 1.0.1
 
 Independent Windows desktop-control application. It does **not** modify Nexa Local, Nexa AI Local Bridge, Nexa ChatGPT Browser Relay 1.6.1, SFTP Publisher, Chrome extensions, or Unity projects.
 
@@ -68,3 +68,8 @@ GitHub Actions workflow: `.github/workflows/nexa-windows-build.yml`.
 ## Safety
 
 Desktop control is OFF by default. Remote input only works during a locally started session. No keylogging, no hidden startup sharing, no UAC bypass, no antivirus disabling, no inbound remote-control server. Disconnecting the network ends the active session and pending commands are not intentionally replayed.
+
+
+## 1.0.1 startup isolation
+
+The main window is created before optional background systems. Native helper, tray, transport, hotkey, or remote API startup failures are reported without terminating the application. NexaShareControl uses its own `%APPDATA%\NexaShareControl` state and does not share state with other Nexa applications.

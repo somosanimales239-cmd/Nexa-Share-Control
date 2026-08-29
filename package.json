@@ -1,7 +1,7 @@
 {
     "name": "nexa-share-control",
-    "version": "1.0.0",
-    "description": "Secure visual desktop control for Windows",
+    "version": "1.0.1",
+    "description": "Secure visual desktop control for Windows - startup isolation release",
     "main": "main.js",
     "private": true,
     "scripts": {

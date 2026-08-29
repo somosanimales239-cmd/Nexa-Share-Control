@@ -11,18 +11,18 @@
   },
   {
     "path": "NEXA_BUILD_INSTRUCTIONS.txt",
-    "bytes": 874,
-    "sha256": "13ed1779bc07ddbff5e1d07b34981ae0e39ee7791c3aa0412f0dcf61e549ee50"
+    "bytes": 1148,
+    "sha256": "e031dc3c3cad5a3f63cce1cde4e7064d1d7c3fc02837b0b0eb51ec7b34eefbc6"
   },
   {
     "path": "README.md",
-    "bytes": 2197,
-    "sha256": "118f88fbc76cb487643b7c3f52eccec7996be05cf2141803185bdcf7d91b1290"
+    "bytes": 2531,
+    "sha256": "2d71a933c18504af58460e3f2803991f5b0b6d5e535739758fcd5e413fe1e380"
   },
   {
     "path": "main.js",
-    "bytes": 4490,
-    "sha256": "43c4984a43af8ca5e5447d3f3fcca6ab909e1ed10781610f8118e2a097875b9a"
+    "bytes": 12860,
+    "sha256": "39b89e8d4f2d01ee2b5caedfaf3b70ca1cae49a4d7d4e7a34eced090bc6fd25a"
   },
   {
     "path": "native/NexaShareControl.Native/MonitorInfo.cs",
@@ -52,12 +52,12 @@
   {
     "path": "nexa.project.json",
     "bytes": 201,
-    "sha256": "8bd70531c6cdee11cabe0b5bd9b63b1ab23f572fd3c75adffc7046b1fada0080"
+    "sha256": "4a7b2cc2b2eb6b730702beb978ddff95733c03b5d742f7d8be83287b1b60536a"
   },
   {
     "path": "package.json",
-    "bytes": 2409,
-    "sha256": "713ba17f053dc8055ce9b37da354d555c0a54032671a3b9d9ea8537e73174699"
+    "bytes": 2437,
+    "sha256": "bf20f8b54e2b3069d398fc04ad51e9a490b920cdb87ac17c8ee38a8e38850ea1"
   },
   {
     "path": "preload.js",
@@ -96,13 +96,13 @@
   },
   {
     "path": "src/app.css",
-    "bytes": 2363,
-    "sha256": "6403a5938629fcd1b98e6cb6a2deeb39d55c749da4ff18b35ad66f2414a6c00c"
+    "bytes": 2508,
+    "sha256": "f1cb6ef8944be6b0999cce1e7a47ef20b385d4e2325536bdab153e6b474cfc76"
   },
   {
     "path": "src/app.js",
-    "bytes": 3094,
-    "sha256": "1dedd09374400e4498c37ea30c278b7ab5b71777fadc60bfd232a769b85dce23"
+    "bytes": 3447,
+    "sha256": "db959ffd4ad3fa2051942458545643c515c402657efda750fef0cadac5f5c595"
   },
   {
     "path": "src/assets/tray.png",
@@ -131,8 +131,8 @@
   },
   {
     "path": "src/main/nativeHelper.js",
-    "bytes": 2308,
-    "sha256": "7aa7d1cde25de15b70561e26cc005177e4c317fc39eb69321f065192b308c245"
+    "bytes": 4440,
+    "sha256": "2799f0c9c5ec0b86bfd0a9cb4fb16660baab3fb0e41b84a059d8831221e0f4d3"
   },
   {
     "path": "src/main/security.js",

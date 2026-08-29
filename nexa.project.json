@@ -2,9 +2,9 @@
     "name": "Nexa Share Control",
     "slug": "nexa-share-control",
     "type": "electron",
-    "version": "1.0.0",
-    "application_version": "1.0.0",
-    "workspace_revision": "1.0.8",
+    "version": "1.0.1",
+    "application_version": "1.0.1",
+    "workspace_revision": "1.0.10",
     "target": "windows",
-    "updated_at": "2026-08-29 16:26:47"
+    "updated_at": "2026-08-29 17:14:35"
 }
