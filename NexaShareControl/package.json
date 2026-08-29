@@ -1,0 +1,36 @@
+{
+  "name": "nexa-share-control",
+  "version": "1.0.0",
+  "description": "Secure visual desktop control for Windows",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test tests/*.test.js",
+    "test:implementation": "node scripts/implementation-test.js",
+    "test:acceptance": "node scripts/acceptance-test.js",
+    "validate": "npm run validate:project && npm run test:implementation",
+    "validate:delivery": "node scripts/validate-project.js --delivery",
+    "validate:project": "node scripts/validate-project.js",
+    "ui:smoke": "node scripts/ui-smoke.js",
+    "build:native": "node scripts/build-native.js",
+    "build:windows": "npm run build:native && electron-builder --win nsis portable zip --x64",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "dependencies": { "ws": "^8.18.0" },
+  "devDependencies": { "electron": "^37.0.0", "electron-builder": "^26.0.12" },
+  "build": {
+    "appId": "com.nexa.sharecontrol",
+    "productName": "NexaShareControl",
+    "executableName": "NexaShareControl",
+    "asar": true,
+    "asarUnpack": ["resources/bin/**"],
+    "files": ["main.js","preload.js","src/**/*","resources/bin/**/*","package.json"],
+    "extraResources": [{"from":"resources/bin","to":"bin","filter":["**/*"]}],
+    "win": {
+      "target": [{"target":"nsis","arch":["x64"]},{"target":"portable","arch":["x64"]},{"target":"zip","arch":["x64"]}],
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
+    "nsis": {"oneClick":false,"allowToChangeInstallationDirectory":true,"createDesktopShortcut":true,"createStartMenuShortcut":true,"shortcutName":"NexaShareControl"}
+  }
+}

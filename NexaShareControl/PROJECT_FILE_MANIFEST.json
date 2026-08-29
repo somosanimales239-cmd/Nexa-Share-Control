@@ -1,0 +1,162 @@
+[
+  {
+    "path": ".github/workflows/nexa-windows-build.yml",
+    "bytes": 1242,
+    "sha256": "f506063f5204c1431e1b4e4a8be082c6612d15394b0847fd700bc72e4d70f1df"
+  },
+  {
+    "path": ".gitignore",
+    "bytes": 81,
+    "sha256": "0850c53eb5921e8c90f2014f8b8ad64767cc6c90cc4cfc4eaa62e959e7052376"
+  },
+  {
+    "path": "NEXA_BUILD_INSTRUCTIONS.txt",
+    "bytes": 947,
+    "sha256": "9ecd6391c68c97f9756ecc12553389d2a7295f5172fca9f17bd31f0da78f650c"
+  },
+  {
+    "path": "README.md",
+    "bytes": 2197,
+    "sha256": "118f88fbc76cb487643b7c3f52eccec7996be05cf2141803185bdcf7d91b1290"
+  },
+  {
+    "path": "main.js",
+    "bytes": 4490,
+    "sha256": "43c4984a43af8ca5e5447d3f3fcca6ab909e1ed10781610f8118e2a097875b9a"
+  },
+  {
+    "path": "native/NexaShareControl.Native/MonitorInfo.cs",
+    "bytes": 2796,
+    "sha256": "d2f2361f1833e906cfe7491e8551c02d738ba35e59b9c4556fe94265a2205634"
+  },
+  {
+    "path": "native/NexaShareControl.Native/NativeInput.cs",
+    "bytes": 4147,
+    "sha256": "bb2209eb43a677aedebfafd9796b836073d9fe49d7f88d0144a5f09a7ffac72d"
+  },
+  {
+    "path": "native/NexaShareControl.Native/NexaShareControl.Native.csproj",
+    "bytes": 394,
+    "sha256": "3d31b0e78b50ace68786fe8734eb234ed3072cb404220008093315a710a31765"
+  },
+  {
+    "path": "native/NexaShareControl.Native/Program.cs",
+    "bytes": 3740,
+    "sha256": "79b467d77b40f8582ecea5a550a9aefaf3ce0286a27ff81b94cf91bd447ab0b5"
+  },
+  {
+    "path": "native/NexaShareControl.Native/WindowControl.cs",
+    "bytes": 1908,
+    "sha256": "6ad49c3de6390374298b78a56a27e8094811637f4dab6f513a1ea0883474c202"
+  },
+  {
+    "path": "package.json",
+    "bytes": 1678,
+    "sha256": "fe4f736cf50bf752436113d6dc9e42e900816fe89fdcbcd4abec1c1a574a4d4d"
+  },
+  {
+    "path": "preload.js",
+    "bytes": 915,
+    "sha256": "c932e36d2c59763fed85cf9affb147866821aa4567c07cfa5fcc2d3e7b0461f0"
+  },
+  {
+    "path": "scripts/acceptance-test.js",
+    "bytes": 626,
+    "sha256": "63bb98bc48b68183adbffb6fb3579f30310fdb5b72c20ae16ec120daf871f324"
+  },
+  {
+    "path": "scripts/build-native.js",
+    "bytes": 813,
+    "sha256": "5f12277e12db20c4e1fdc35e8981197fd90f5fa88480edf90d8937f596a37525"
+  },
+  {
+    "path": "scripts/implementation-test.js",
+    "bytes": 850,
+    "sha256": "247f5077c8f42c6a6215cf10b9e744f6ece9ad570cdc99df51a724639b34f769"
+  },
+  {
+    "path": "scripts/ui-smoke.js",
+    "bytes": 229,
+    "sha256": "d4fc54f21065b8a5afaf39d108b5f5ed8823b98a738e40b3a1939980a16136b9"
+  },
+  {
+    "path": "scripts/validate-project.js",
+    "bytes": 881,
+    "sha256": "2aeffbafe1e3fb9f2bf971c904aeb970f3ab29f5816a30b8d179bc04ca28eb9f"
+  },
+  {
+    "path": "src/app.css",
+    "bytes": 2363,
+    "sha256": "6403a5938629fcd1b98e6cb6a2deeb39d55c749da4ff18b35ad66f2414a6c00c"
+  },
+  {
+    "path": "src/app.js",
+    "bytes": 3094,
+    "sha256": "1dedd09374400e4498c37ea30c278b7ab5b71777fadc60bfd232a769b85dce23"
+  },
+  {
+    "path": "src/assets/tray.png",
+    "bytes": 68,
+    "sha256": "431ced6916a2a21a156e38701afe55bbd7f88969fbbfc56d7fe099d47f265460"
+  },
+  {
+    "path": "src/index.html",
+    "bytes": 3805,
+    "sha256": "d3df3a72aea3a370be4030e1cc75fd13d58e020d46411c5186a18f3087f3e804"
+  },
+  {
+    "path": "src/main/commandRouter.js",
+    "bytes": 2141,
+    "sha256": "4a05161a41e5bb58edd8e1a17db99c3ead31fd78f842e1b9488dc581f242e594"
+  },
+  {
+    "path": "src/main/config.js",
+    "bytes": 929,
+    "sha256": "3035ee9dc2cdbc4df630594f5a48e58e0b290f5644ae0147293ad4cc0f310797"
+  },
+  {
+    "path": "src/main/logger.js",
+    "bytes": 454,
+    "sha256": "7deae0a6145dbbf503efe8d7f731fb7e31e6ca037127e1320330550534c1d69f"
+  },
+  {
+    "path": "src/main/nativeHelper.js",
+    "bytes": 2308,
+    "sha256": "7aa7d1cde25de15b70561e26cc005177e4c317fc39eb69321f065192b308c245"
+  },
+  {
+    "path": "src/main/security.js",
+    "bytes": 1036,
+    "sha256": "ff8186822681b38170f356717efc7b47e47170142e53054453d67c4c353059c7"
+  },
+  {
+    "path": "src/main/sessionManager.js",
+    "bytes": 1045,
+    "sha256": "2acff75e358a0bd0dbe7ffca1789f51d64a40b8ef79672b554acfde6caec1a4f"
+  },
+  {
+    "path": "src/main/transport.js",
+    "bytes": 4862,
+    "sha256": "bcbe9fc3341b1e27acfe5e967a20df69c314ef2ba39232f54239803d5f7fee9a"
+  },
+  {
+    "path": "src/renderer/diagnostics.js",
+    "bytes": 431,
+    "sha256": "d576d1baedf25899670f4cf835c5b2e742c82fab265edd799768f9755df2d701"
+  },
+  {
+    "path": "src/renderer/screenCapture.js",
+    "bytes": 3271,
+    "sha256": "baed8825a73c23f1b26e61aace84e332fe0b3bfe7a90ec8469db68eccc4acf5d"
+  },
+  {
+    "path": "src/renderer/settings.js",
+    "bytes": 639,
+    "sha256": "ceddfa29f6be2662458bc8b1db13daa78903507971c17e15e80caf33ef4109a9"
+  },
+  {
+    "path": "tests/basic.test.js",
+    "bytes": 429,
+    "sha256": "63a1df37798ff8d6cd16541f4f142beaa0695c00f3e359b6d0ee5d13d24d230e"
+  }
+]

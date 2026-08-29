@@ -1,0 +1,22 @@
+NEXASHARECONTROL 1.0.0 - NEXA MANUAL DELIVERY READY
+
+Final installed executable: NexaShareControl.exe
+Target: Windows x64
+Application version: 1.0.0
+
+This package uses the Nexa App Builder Pro Windows workflow contract:
+- Resolve application version / NEXA_APPLICATION_VERSION_METADATA_V1
+- Dynamic Node runtime resolution
+- Portable dependency lock generation
+- validate:delivery
+- validate:project
+- npm test
+- ui:smoke
+- Build installer and portable app
+- NEXA_WINDOWS_ARTIFACT_DELIVERY_V3
+
+Required source scripts include build:win and verify:artifacts.
+Electron output directory is release/ so Nexa Manual Delivery can normalize and verify Installer, Portable and Windows ZIP artifacts.
+
+ISOLATION:
+This project is independent. It must not modify Nexa Local, Nexa AI Local Bridge, Nexa ChatGPT Browser Relay 1.6.1, SFTP Publisher, Chrome extensions, or Unity projects.

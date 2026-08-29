@@ -1,0 +1,38 @@
+name: NexaShareControl Windows Build
+on: { workflow_dispatch: {}, push: { branches: [ main ] } }
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: npm }
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: '8.0.x' }
+      - run: npm install --no-audit --no-fund
+      - run: npm run build:native
+      - shell: pwsh
+        run: |
+          if (!(Test-Path "resources/bin/NexaShareControl.Native.exe")) { throw "Native helper missing" }
+      - run: npm run validate
+      - run: npm test
+      - run: npm run test:implementation
+      - run: npm run test:acceptance
+      - run: npm run ui:smoke
+      - run: npx electron-builder --win nsis portable zip --x64
+      - run: npm run validate:delivery
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NexaShareControl-Windows
+          path: |
+            dist/*.exe
+            dist/*.zip
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NexaShareControl-Diagnostics
+          path: |
+            package.json
+            scripts/**
+            tests/**

@@ -1,0 +1,25 @@
+NEXASHARECONTROL 1.0.0 - WINDOWS BUILD
+
+Final executable name: NexaShareControl.exe
+Target: Windows x64
+Architecture: Electron application + bundled self-contained .NET 8 native input helper.
+
+IMPORTANT ISOLATION RULE:
+This is a NEW and INDEPENDENT project. Do not modify Nexa Local, Nexa AI Local Bridge, Nexa ChatGPT Browser Relay 1.6.1, SFTP Publisher, Chrome extensions, or any existing Unity project.
+
+Required build sequence:
+1. npm install --no-audit --no-fund
+2. npm run build:native
+3. npm run validate
+4. npm test
+5. npm run test:implementation
+6. npm run test:acceptance
+7. npm run ui:smoke
+8. npm run build:windows
+
+Required Windows outputs:
+- NexaShareControl installer EXE
+- NexaShareControl portable EXE
+- NexaShareControl ZIP
+
+The desktop-control implementation must stay native/direct: screen capture through Electron/Chromium and mouse/keyboard through the bundled C# Win32 helper. Do not replace direct control with PowerShell.

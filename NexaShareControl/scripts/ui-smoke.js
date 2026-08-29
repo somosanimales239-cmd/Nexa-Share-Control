@@ -1,0 +1,1 @@
+const fs=require('fs'),path=require('path'),h=fs.readFileSync(path.join(__dirname,'..','src','index.html'),'utf8');if(!h.includes('NexaShareControl')||!h.includes('CTRL + SHIFT + F12'))process.exit(1);console.log('UI_SMOKE_OK');

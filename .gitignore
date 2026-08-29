@@ -1,0 +1,7 @@
+node_modules/
+dist/
+resources/bin/*.exe
+native/**/bin/
+native/**/obj/
+*.log
+.env
