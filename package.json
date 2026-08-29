@@ -1,94 +1,96 @@
 {
-    "name": "nexa-share-control",
-    "version": "1.1.0",
-    "description": "Secure visual desktop control for Windows with multi-monitor, multi-application and multi-window sharing",
-    "main": "main.js",
-    "private": true,
-    "scripts": {
-        "start": "electron .",
-        "test": "node --test tests/*.test.js",
-        "test:implementation": "node scripts/implementation-test.js",
-        "test:acceptance": "node scripts/acceptance-test.js",
-        "validate": "npm run validate:project && npm run test:implementation && npm run test:acceptance",
-        "validate:delivery": "node scripts/validate-project.js --delivery",
-        "validate:project": "node scripts/validate-project.js",
-        "ui:smoke": "node scripts/ui-smoke.js",
-        "build:native": "node scripts/build-native.js",
-        "build:windows": "npm run build:win",
-        "postinstall": "electron-builder install-app-deps",
-        "build:win": "npm run build:native && npm run validate && electron-builder --win nsis portable zip --x64 --publish never && npm run verify:artifacts",
-        "verify:artifacts": "node scripts/verify-artifacts.js"
-    },
-    "dependencies": {
-        "ws": "^8.18.0"
-    },
-    "devDependencies": {
-        "electron": "^37.0.0",
-        "electron-builder": "^26.0.12"
-    },
-    "build": {
-        "appId": "com.nexa.sharecontrol",
-        "productName": "NexaShareControl",
-        "executableName": "NexaShareControl",
-        "asar": true,
-        "files": [
-            "main.js",
-            "preload.js",
-            "src/**/*",
-            "package.json"
-        ],
-        "extraResources": [
-            {
-                "from": "resources/bin",
-                "to": "bin",
-                "filter": [
-                    "**/*"
-                ]
-            }
-        ],
-        "win": {
-            "target": [
-                {
-                    "target": "nsis",
-                    "arch": [
-                        "x64"
-                    ]
-                },
-                {
-                    "target": "portable",
-                    "arch": [
-                        "x64"
-                    ]
-                },
-                {
-                    "target": "zip",
-                    "arch": [
-                        "x64"
-                    ]
-                }
-            ],
-            "artifactName": "${productName}-${version}-${arch}.${ext}"
+  "name": "nexa-share-control",
+  "version": "1.2.0",
+  "description": "Secure Windows visual desktop control with multi-monitor, multi-application and multi-window sharing; Builder V3 delivery verified",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test tests/*.test.js",
+    "test:implementation": "node scripts/implementation-test.js",
+    "test:acceptance": "node scripts/acceptance-test.js",
+    "validate": "node --check main.js && node --check preload.js && node --check src/app.js && node --check src/renderer/screenCapture.js && npm run validate:delivery && npm run validate:project && npm test && npm run test:implementation && npm run test:acceptance",
+    "validate:delivery": "node scripts/validate-delivery.js",
+    "validate:project": "node scripts/validate-project.js",
+    "ui:smoke": "electron scripts/ui-smoke.js",
+    "build:native": "node scripts/build-native.js",
+    "build:windows": "npm run build:win",
+    "postinstall": "electron-builder install-app-deps",
+    "build:win": "npm run build:native && npm run validate && electron-builder --win nsis portable zip --x64 --publish never && npm run verify:artifacts",
+    "verify:artifacts": "node scripts/verify-artifacts.js"
+  },
+  "dependencies": {
+    "ws": "8.18.0"
+  },
+  "devDependencies": {
+    "electron": "43.1.0",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "com.nexa.sharecontrol",
+    "productName": "NexaShareControl",
+    "executableName": "NexaShareControl",
+    "asar": true,
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/bin",
+        "to": "bin",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
         },
-        "nsis": {
-            "oneClick": false,
-            "allowToChangeInstallationDirectory": true,
-            "createDesktopShortcut": true,
-            "createStartMenuShortcut": true,
-            "shortcutName": "NexaShareControl",
-            "artifactName": "${productName}-Setup-${version}-${arch}.${ext}",
-            "perMachine": false,
-            "allowElevation": true,
-            "uninstallDisplayName": "NexaShareControl",
-            "deleteAppDataOnUninstall": false
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
         },
-        "directories": {
-            "output": "release"
-        },
-        "portable": {
-            "artifactName": "${productName}-Portable-${version}-${arch}.${ext}"
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
         }
+      ],
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
     },
-    "engines": {
-        "node": ">=24"
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "NexaShareControl",
+      "artifactName": "${productName}-Setup-${version}-${arch}.${ext}",
+      "perMachine": false,
+      "allowElevation": true,
+      "uninstallDisplayName": "NexaShareControl",
+      "deleteAppDataOnUninstall": false
+    },
+    "directories": {
+      "output": "release"
+    },
+    "portable": {
+      "artifactName": "${productName}-Portable-${version}-${arch}.${ext}"
     }
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "author": "Nexa Share Control",
+  "license": "UNLICENSED"
 }

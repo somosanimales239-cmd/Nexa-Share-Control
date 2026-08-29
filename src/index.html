@@ -10,7 +10,7 @@
 <body>
 <header>
   <div>
-    <h1>NexaShareControl <span class="version">1.1.0</span></h1>
+    <h1>NexaShareControl <span class="version">1.2.0</span></h1>
     <p>Secure Multi-Source Visual Desktop Control</p>
   </div>
   <div id="globalStatus" class="pill off">DESKTOP CONTROL OFF</div>
@@ -42,9 +42,11 @@
       <div class="row compact">
         <button id="refreshSourcesBtn">REFRESH WINDOWS</button>
         <button id="selectScreensBtn">SELECT MONITORS</button>
+        <button id="selectAllSourcesBtn">SELECT ALL VISIBLE</button>
         <button id="clearSourcesBtn">CLEAR</button>
       </div>
     </div>
+    <div class="source-filter-row"><label>Find application or window<input id="sourceSearch" placeholder="Chrome, Unity, Visual Studio, Explorer…"></label><span class="muted">Up to 16 sources can be shared simultaneously.</span></div>
     <div id="sourcePicker" class="source-picker">
       <div class="empty-source">Loading monitors and open applications…</div>
     </div>

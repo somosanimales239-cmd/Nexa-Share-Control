@@ -15,7 +15,7 @@ const {
 // Nexa AI Local Bridge, Nexa Local and Nexa ChatGPT Browser Relay.
 try {
   app.setName('NexaShareControl');
-  app.setPath('userData', path.join(app.getPath('appData'), 'NexaShareControl'));
+  if (process.env.NEXA_UI_SMOKE !== '1') app.setPath('userData', path.join(app.getPath('appData'), 'NexaShareControl'));
   if (process.platform === 'win32') app.setAppUserModelId('com.nexa.sharecontrol');
 } catch {}
 
@@ -29,8 +29,25 @@ let session = null;
 let router = null;
 let transport = null;
 let startupComplete = false;
+let rendererReady = false;
+let startupSmokeWritten = false;
 let startupIssues = [];
 let selectedShareSources = [];
+
+let ownsSingleInstance = true;
+try {
+  ownsSingleInstance = app.requestSingleInstanceLock();
+  if (!ownsSingleInstance) app.quit();
+  app.on('second-instance', () => {
+    try {
+      if (win) {
+        if (win.isMinimized()) win.restore();
+        win.show();
+        win.focus();
+      }
+    } catch {}
+  });
+} catch {}
 
 function noteIssue(area, error) {
   const message = error && error.message ? error.message : String(error || 'Unknown error');
@@ -116,9 +133,23 @@ function createWindow() {
     }
   });
 
+  win.webContents.on('did-finish-load', () => {
+    rendererReady = true;
+    pushState();
+    maybeWriteStartupSmoke();
+  });
+
   win.webContents.on('did-fail-load', (_event, code, description) => {
+    rendererReady = false;
     noteIssue('UI load', new Error(`${code}: ${description}`));
   });
+
+  win.webContents.on('render-process-gone', (_event, details) => {
+    rendererReady = false;
+    noteIssue('Renderer process', new Error(`Renderer exited: ${details?.reason || 'unknown'} code=${details?.exitCode ?? ''}`));
+  });
+
+  win.on('unresponsive', () => noteIssue('UI responsiveness', new Error('Main window became unresponsive')));
 
   win.loadFile(path.join(__dirname, 'src', 'index.html')).catch(error => {
     noteIssue('UI load', error);
@@ -238,7 +269,6 @@ function registerIpc() {
     if (!session) return { ok:true };
     try {
       const result = await session.stop('local');
-      selectedShareSources = [];
       pushState();
       return result;
     } catch (error) {
@@ -247,7 +277,7 @@ function registerIpc() {
     }
   });
 
-  // v1.1.0: monitors and open application/windows are selectable at the same time.
+  // v1.2.0: monitors and open application/windows are selectable at the same time.
   ipcMain.handle('screen:list-sources', async () => {
     try { return await discoverShareSources(); }
     catch (error) {
@@ -257,7 +287,7 @@ function registerIpc() {
   });
 
   ipcMain.handle('screen:set-selection', (_event, sources) => {
-    const clean = Array.isArray(sources) ? sources.slice(0, 24).map(source => ({
+    const clean = Array.isArray(sources) ? sources.slice(0, 16).map(source => ({
       id:String(source?.id || ''),
       name:String(source?.name || ''),
       type:source?.type === 'screen' ? 'screen' : 'window',
@@ -335,7 +365,7 @@ function createTraySafely() {
         { label:`Status: ${active ? 'ACTIVE' : 'OFF'}`, enabled:false },
         { label:`Selected sources: ${selectedShareSources.length}`, enabled:false },
         { type:'separator' },
-        { label:'Start Sharing', enabled:!active, click:()=>session?.startLocalSession?.() },
+        { label:'Open to Start Sharing', enabled:!active, click:()=>{ win?.show(); win?.focus(); } },
         { label:'Stop Sharing', enabled:active, click:()=>session?.stop?.('tray') },
         { type:'separator' },
         { label:'Exit', click:()=>{ app.isQuitting=true; app.quit(); } }
@@ -349,26 +379,35 @@ function createTraySafely() {
   }
 }
 
-function writeStartupSmoke() {
+function maybeWriteStartupSmoke() {
   const target = process.env.NEXA_STARTUP_SMOKE_FILE;
-  if (!target) return;
+  if (!target || startupSmokeWritten || !startupComplete || !rendererReady) return;
+  startupSmokeWritten = true;
+  const helperStatus = helperState();
+  const report = {
+    ok:true,
+    version:app.getVersion(),
+    rendererReady,
+    startupComplete,
+    startupIssues,
+    helper:helperStatus,
+    helperAvailable:!!helperStatus.available,
+    userData:app.getPath('userData'),
+    selectedSources:selectedShareSources.length,
+    generatedAt:new Date().toISOString()
+  };
   try {
     fs.mkdirSync(path.dirname(target), { recursive:true });
-    fs.writeFileSync(target, JSON.stringify({
-      ok:true,
-      version:app.getVersion(),
-      startupComplete,
-      startupIssues,
-      helper:helperState(),
-      userData:app.getPath('userData')
-    }, null, 2), 'utf8');
+    fs.writeFileSync(target, JSON.stringify(report, null, 2), 'utf8');
   } catch (error) {
+    startupSmokeWritten = false;
     noteIssue('Startup smoke report', error);
+    return;
   }
   setTimeout(() => {
     app.isQuitting = true;
     app.quit();
-  }, 700);
+  }, 900);
 }
 
 async function initializeBackgroundSystems() {
@@ -381,7 +420,7 @@ async function initializeBackgroundSystems() {
   try {
     const { AppLogger } = require('./src/main/logger');
     logger = new AppLogger(app.getPath('userData'));
-    logger.info('NexaShareControl 1.1.0 startup begun');
+    logger.info('NexaShareControl 1.2.0 startup begun');
     for (const issue of startupIssues) logger.warn(`pre-logger ${issue.area}: ${issue.message}`);
   } catch (error) { noteIssue('Logger', error); }
 
@@ -424,28 +463,31 @@ async function initializeBackgroundSystems() {
     }
   } catch (error) { noteIssue('Command router', error); }
 
-  createTraySafely();
+  const smokeMode = process.env.NEXA_UI_SMOKE === '1' || !!process.env.NEXA_STARTUP_SMOKE_FILE;
+  if (!smokeMode) createTraySafely();
 
-  try {
+  if (!smokeMode) try {
     const registered = globalShortcut.register('CommandOrControl+Shift+F12', async () => {
       try { await session?.emergencyStop?.(); } catch {}
       try { transport?.clearPendingCommands?.(); } catch {}
-      selectedShareSources = [];
       try { win?.webContents.send('session:emergency-stopped'); } catch {}
       pushState();
     });
     if (!registered) noteIssue('Emergency hotkey', new Error('CTRL+SHIFT+F12 is already registered by another application'));
   } catch (error) { noteIssue('Emergency hotkey', error); }
 
-  try { transport?.start?.(); } catch (error) { noteIssue('Remote transport start', error); }
+  if (!smokeMode) {
+    try { transport?.start?.(); } catch (error) { noteIssue('Remote transport start', error); }
+  }
 
   startupComplete = true;
   try { logger?.info(`NexaShareControl startup complete; issues=${startupIssues.length}`); } catch {}
   pushState();
-  writeStartupSmoke();
+  maybeWriteStartupSmoke();
 }
 
 async function boot() {
+  if (!ownsSingleInstance) return;
   registerIpc();
   createWindow();
   pushState();

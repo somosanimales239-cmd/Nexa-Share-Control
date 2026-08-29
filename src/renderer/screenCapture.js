@@ -8,14 +8,19 @@ class MultiSourceCapture{
     this.frameId=0;
     this.force=false;
     this.running=false;
+    this.snapshotBusy=false;
+    this.maxSources=16;
+    this.shareSetId='';
   }
 
   async init(){
-    await this.refreshSources();
     refreshSourcesBtn.onclick=()=>this.refreshSources();
     selectScreensBtn.onclick=()=>this.selectScreens();
+    selectAllSourcesBtn.onclick=()=>this.selectAll();
     clearSourcesBtn.onclick=()=>this.clearSelection();
+    sourceSearch.oninput=()=>this.renderPicker();
     window.nexa.onForceFrame(()=>{this.force=true;if(this.running)this.snapshotAll(false)});
+    await this.refreshSources();
   }
 
   settings(){
@@ -26,18 +31,37 @@ class MultiSourceCapture{
     };
   }
 
+  setControlsLocked(locked){
+    refreshSourcesBtn.disabled=locked;
+    selectScreensBtn.disabled=locked;
+    selectAllSourcesBtn.disabled=locked;
+    clearSourcesBtn.disabled=locked;
+    sourceSearch.disabled=locked;
+    for(const input of sourcePicker.querySelectorAll('input[type="checkbox"]'))input.disabled=locked;
+    for(const button of sourcePicker.querySelectorAll('button'))button.disabled=locked;
+  }
+
   async refreshSources(){
+    if(this.running)return this.sources;
     const previous=new Set(this.selected);
     const list=await window.nexa.listShareSources();
     this.sources=Array.isArray(list)?list:[];
     this.selected=new Set([...previous].filter(id=>this.sources.some(source=>source.id===id)));
     this.renderPicker();
-    this.updateSelectionSummary();
+    await this.updateSelectionSummary();
     return this.sources;
   }
 
-  groupedWindows(){
-    const windows=this.sources.filter(source=>source.type==='window');
+  filteredSources(){
+    const q=String(sourceSearch.value||'').trim().toLowerCase();
+    if(!q)return this.sources;
+    return this.sources.filter(source=>[
+      source.name,source.processName,source.type,source.displayId
+    ].some(value=>String(value||'').toLowerCase().includes(q)));
+  }
+
+  groupedWindows(list=this.filteredSources()){
+    const windows=list.filter(source=>source.type==='window');
     const groups=new Map();
     for(const source of windows){
       const key=source.processName||'Windows';
@@ -45,6 +69,14 @@ class MultiSourceCapture{
       groups.get(key).push(source);
     }
     return [...groups.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
+  }
+
+  toggleSource(id,checked){
+    if(checked){
+      if(this.selected.size>=this.maxSources&&!this.selected.has(id))return false;
+      this.selected.add(id);
+    }else this.selected.delete(id);
+    return true;
   }
 
   card(source){
@@ -71,16 +103,20 @@ class MultiSourceCapture{
     }else{
       const pieces=[source.processName||'Application'];
       if(source.isMinimized)pieces.push('Minimized');
+      if(source.bounds)pieces.push(`${source.bounds.width}×${source.bounds.height}`);
       sub.textContent=pieces.join(' · ');
     }
 
     const checkWrap=document.createElement('div');checkWrap.className='source-check';
-    const check=document.createElement('input');check.type='checkbox';check.checked=this.selected.has(source.id);
+    const check=document.createElement('input');check.type='checkbox';check.checked=this.selected.has(source.id);check.disabled=this.running;
     const text=document.createElement('span');text.textContent='Share this source';
-    check.onchange=()=>{
-      if(check.checked)this.selected.add(source.id);else this.selected.delete(source.id);
+    check.onchange=async()=>{
+      if(!this.toggleSource(source.id,check.checked)){
+        check.checked=false;
+        window.dispatchEvent(new CustomEvent('nexa:share-limit',{detail:{max:this.maxSources}}));
+      }
       label.classList.toggle('selected',check.checked);
-      this.updateSelectionSummary();
+      await this.updateSelectionSummary();
     };
     checkWrap.append(check,text);info.append(title,sub,checkWrap);label.append(thumb,info);
     return label;
@@ -88,7 +124,8 @@ class MultiSourceCapture{
 
   renderPicker(){
     sourcePicker.innerHTML='';
-    const screens=this.sources.filter(source=>source.type==='screen');
+    const filtered=this.filteredSources();
+    const screens=filtered.filter(source=>source.type==='screen');
 
     const screenGroup=document.createElement('div');screenGroup.className='source-group';
     const screenHead=document.createElement('div');screenHead.className='source-group-head';
@@ -96,17 +133,24 @@ class MultiSourceCapture{
     screenHead.appendChild(screenTitle);screenGroup.appendChild(screenHead);
     const screenGrid=document.createElement('div');screenGrid.className='source-grid';
     screens.forEach(source=>screenGrid.appendChild(this.card(source)));
-    if(!screens.length){const e=document.createElement('div');e.className='empty-source';e.textContent='No monitor source detected.';screenGrid.appendChild(e)}
+    if(!screens.length){const e=document.createElement('div');e.className='empty-source';e.textContent='No monitor matches this view.';screenGrid.appendChild(e)}
     screenGroup.appendChild(screenGrid);sourcePicker.appendChild(screenGroup);
 
-    for(const [processName,windows] of this.groupedWindows()){
+    for(const [processName,windows] of this.groupedWindows(filtered)){
       const group=document.createElement('div');group.className='source-group';
       const head=document.createElement('div');head.className='source-group-head';
       const title=document.createElement('h3');title.textContent=`APP · ${processName} (${windows.length} window${windows.length===1?'':'s'})`;
-      const button=document.createElement('button');button.textContent='SELECT APP';
-      button.onclick=()=>{
-        windows.forEach(source=>this.selected.add(source.id));
-        this.renderPicker();this.updateSelectionSummary();
+      const allSelected=windows.every(source=>this.selected.has(source.id));
+      const button=document.createElement('button');button.textContent=allSelected?'UNSELECT APP':'SELECT APP';button.disabled=this.running;
+      button.onclick=async()=>{
+        if(allSelected){windows.forEach(source=>this.selected.delete(source.id));}
+        else{
+          for(const source of windows){
+            if(this.selected.size>=this.maxSources&&!this.selected.has(source.id))break;
+            this.selected.add(source.id);
+          }
+        }
+        this.renderPicker();await this.updateSelectionSummary();
       };
       head.append(title,button);group.appendChild(head);
       const grid=document.createElement('div');grid.className='source-grid';
@@ -114,29 +158,40 @@ class MultiSourceCapture{
       group.appendChild(grid);sourcePicker.appendChild(group);
     }
 
-    if(!this.sources.length){
-      sourcePicker.innerHTML='<div class="empty-source">No shareable monitor or application window was found.</div>';
+    if(!filtered.length){
+      sourcePicker.innerHTML='<div class="empty-source">No shareable monitor or application window matches the filter.</div>';
     }
   }
 
-  selectScreens(){
-    this.sources.filter(source=>source.type==='screen').forEach(source=>this.selected.add(source.id));
-    this.renderPicker();this.updateSelectionSummary();
+  async selectScreens(){
+    if(this.running)return;
+    for(const source of this.sources.filter(source=>source.type==='screen')){
+      if(this.selected.size>=this.maxSources&&!this.selected.has(source.id))break;
+      this.selected.add(source.id);
+    }
+    this.renderPicker();await this.updateSelectionSummary();
   }
 
-  clearSelection(){
-    this.selected.clear();this.renderPicker();this.updateSelectionSummary();
+  async selectAll(){
+    if(this.running)return;
+    for(const source of this.filteredSources()){
+      if(this.selected.size>=this.maxSources&&!this.selected.has(source.id))break;
+      this.selected.add(source.id);
+    }
+    this.renderPicker();await this.updateSelectionSummary();
   }
 
-  selectedSources(){
-    return this.sources.filter(source=>this.selected.has(source.id));
+  async clearSelection(){
+    if(this.running)return;
+    this.selected.clear();this.renderPicker();await this.updateSelectionSummary();
   }
 
+  selectedSources(){return this.sources.filter(source=>this.selected.has(source.id));}
   hasSelection(){return this.selected.size>0}
 
   async updateSelectionSummary(){
     const selected=this.selectedSources();
-    selectedSourceCount.textContent=`${selected.length} selected`;
+    selectedSourceCount.textContent=`${selected.length} selected · max ${this.maxSources}`;
     selectedSourceNames.textContent=selected.length
       ?selected.map(source=>source.processName?`${source.processName}: ${source.name}`:source.name).join(' · ')
       :'Nothing will be shared until you select a source.';
@@ -144,13 +199,7 @@ class MultiSourceCapture{
   }
 
   mediaConstraints(sourceId){
-    return{
-      audio:false,
-      video:{mandatory:{
-        chromeMediaSource:'desktop',
-        chromeMediaSourceId:sourceId
-      }}
-    };
+    return{audio:false,video:{mandatory:{chromeMediaSource:'desktop',chromeMediaSourceId:sourceId}}};
   }
 
   createPreviewTile(source){
@@ -166,9 +215,11 @@ class MultiSourceCapture{
     if(!this.sources.length)await this.refreshSources();
     const selected=this.selectedSources();
     if(!selected.length)return{ok:false,error:'select_at_least_one_source',started:0};
+    if(selected.length>this.maxSources)return{ok:false,error:`too_many_sources_max_${this.maxSources}`,started:0};
 
     previewGrid.innerHTML='';
     let started=0;
+    this.shareSetId=(globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random()}`);
 
     for(const source of selected){
       const {tile,video}=this.createPreviewTile(source);previewGrid.appendChild(tile);
@@ -177,7 +228,9 @@ class MultiSourceCapture{
         video.srcObject=stream;await video.play();
         const canvas=document.createElement('canvas');
         const ctx=canvas.getContext('2d',{alpha:false});
-        this.active.set(source.id,{source,stream,video,canvas,ctx,lastSig:null,staticSkips:0});
+        const item={source,stream,video,canvas,ctx,lastSig:null,staticSkips:0,tile};
+        this.active.set(source.id,item);
+        for(const track of stream.getTracks())track.addEventListener('ended',()=>this.sourceEnded(source.id));
         started++;
       }catch(error){
         tile.innerHTML='';
@@ -193,11 +246,27 @@ class MultiSourceCapture{
     }
 
     this.running=true;
+    this.setControlsLocked(true);
     const ms=Math.max(66,Math.floor(1000/this.settings().fps));
     this.timer=setInterval(()=>this.snapshotAll(false).catch(console.error),ms);
     await this.snapshotAll(true);
     this.updatePreviewMeta();
     return{ok:true,started,selected:selected.length};
+  }
+
+  sourceEnded(sourceId){
+    const item=this.active.get(sourceId);
+    if(!item)return;
+    this.active.delete(sourceId);
+    try{item.tile?.remove()}catch{}
+    this.updatePreviewMeta();
+    if(this.active.size===0&&this.running){
+      this.running=false;
+      if(this.timer)clearInterval(this.timer);
+      this.timer=null;
+      this.setControlsLocked(false);
+      previewGrid.innerHTML='<div class="preview-placeholder">All selected capture sources have closed or stopped.</div>';
+    }
   }
 
   stop(resetPreview=true){
@@ -206,7 +275,8 @@ class MultiSourceCapture{
       try{item.stream.getTracks().forEach(track=>track.stop())}catch{}
       try{item.video.srcObject=null}catch{}
     }
-    this.active.clear();this.running=false;
+    this.active.clear();this.running=false;this.snapshotBusy=false;this.force=false;
+    this.setControlsLocked(false);
     if(resetPreview){
       previewGrid.innerHTML='<div class="preview-placeholder">Selected screens and windows will appear here.</div>';
       previewMeta.textContent='Not sharing';
@@ -256,7 +326,7 @@ class MultiSourceCapture{
     item.staticSkips=0;
 
     this.frameId++;
-    const quality=highQuality?.90:Math.max(.40,Math.min(.90,cfg.quality/100));
+    const quality=highQuality?0.90:Math.max(0.40,Math.min(0.90,cfg.quality/100));
     const jpegBase64=item.canvas.toDataURL('image/jpeg',quality).split(',')[1];
     const source=item.source;
     const cursor=context.cursor||{},active=context.active||{};
@@ -266,6 +336,7 @@ class MultiSourceCapture{
       frame_id:this.frameId,
       timestamp_utc:new Date().toISOString(),
       multi_source:true,
+      share_set_id:this.shareSetId,
       source_index:index,
       source_count:total,
       source_id:source.id,
@@ -285,22 +356,27 @@ class MultiSourceCapture{
       active_window_title:active.title||''
     };
 
-    await window.nexa.sendFrame({metadata,jpegBase64});
-    return true;
+    const result=await window.nexa.sendFrame({metadata,jpegBase64});
+    return result?.ok!==false;
   }
 
   async snapshotAll(highQuality=false){
     if(!this.running&&this.active.size===0)return{ok:false,count:0};
-    const items=[...this.active.values()];
-    const context=await this.nativeContext();
-    let sent=0;
-    for(let index=0;index<items.length;index++){
-      try{
-        if(await this.snapshotOne(items[index],index,items.length,highQuality,context))sent++;
-      }catch(error){console.error(error)}
+    if(this.snapshotBusy)return{ok:false,count:0,busy:true};
+    this.snapshotBusy=true;
+    try{
+      const items=[...this.active.values()];
+      const context=await this.nativeContext();
+      let sent=0;
+      for(let index=0;index<items.length;index++){
+        try{if(await this.snapshotOne(items[index],index,items.length,highQuality,context))sent++;}
+        catch(error){console.error(error)}
+      }
+      this.force=false;this.updatePreviewMeta();
+      return{ok:sent>0,count:sent};
+    }finally{
+      this.snapshotBusy=false;
     }
-    this.force=false;this.updatePreviewMeta();
-    return{ok:sent>0,count:sent};
   }
 
   updatePreviewMeta(){

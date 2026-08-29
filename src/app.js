@@ -31,6 +31,9 @@ function render(state){
     window.nexaScreen.stop();
     log('EMERGENCY STOP: screen sharing and remote control stopped.');
   });
+  window.addEventListener('nexa:share-limit',event=>{
+    log(`Source limit reached. NexaShareControl can share up to ${event.detail?.max||16} sources simultaneously.`);
+  });
 
   await window.nexaSettings.init(initial.config);
   await window.nexaScreen.init(initial.config);

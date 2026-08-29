@@ -1,23 +1,28 @@
+'use strict';
 const fs=require('fs');
 const path=require('path');
 const root=path.resolve(__dirname,'..');
-
-const main=fs.readFileSync(path.join(root,'main.js'),'utf8');
-const capture=fs.readFileSync(path.join(root,'src/renderer/screenCapture.js'),'utf8');
-const ui=fs.readFileSync(path.join(root,'src/index.html'),'utf8');
-const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
-
+const read=f=>fs.readFileSync(path.join(root,f),'utf8');
+const pkg=JSON.parse(read('package.json'));
+const project=JSON.parse(read('nexa.project.json'));
+const main=read('main.js'),capture=read('src/renderer/screenCapture.js'),html=read('src/index.html');
+const helper=read('src/main/nativeHelper.js'),native=read('native/NexaShareControl.Native/NativeInput.cs');
+const workflow=read('.github/workflows/nexa-windows-build.yml');
 const checks=[
-  [pkg.version==='1.1.0','application version 1.1.0'],
-  [String(pkg.scripts['build:win']).startsWith('npm run build:native'),'native helper is built before Electron packaging'],
+  [pkg.version===project.application_version,'package/project version alignment'],
+  [String(pkg.scripts['build:win']).includes('build:native'),'native helper builds before Electron'],
   [main.includes("types:['screen','window']"),'screen + window desktopCapturer discovery'],
-  [main.includes('processName'),'application process metadata'],
   [main.includes('screen:set-selection'),'main-process share selection state'],
-  [capture.includes('new Set()'),'multiple selectable sources'],
-  [capture.includes('this.active=new Map()'),'multiple simultaneous streams'],
-  [capture.includes('source_count'),'multi-source frame metadata'],
-  [capture.includes('SELECT APP')||capture.includes('selectScreens'),'application/window picker support'],
-  [ui.includes('sourcePicker')&&ui.includes('previewGrid'),'multi-source UI']
+  [capture.includes('maxSources=16'),'bounded multi-source selection'],
+  [capture.includes('snapshotBusy'),'capture overlap protection'],
+  [capture.includes('this.active=new Map()'),'simultaneous source streams'],
+  [capture.includes('source_count')&&capture.includes('share_set_id'),'multi-source frame identity'],
+  [html.includes('sourceSearch')&&html.includes('selectAllSourcesBtn'),'source search/select-all UI'],
+  [helper.includes('this.stopping'),'native helper shutdown/restart guard'],
+  [native.includes('window_id')&&native.includes('ResolveTarget'),'window-targeted pointer coordinates'],
+  [workflow.includes('NEXA_WINDOWS_ARTIFACT_DELIVERY_V3'),'Builder Windows Delivery V3 preserved'],
+  [workflow.includes('helperAvailable'),'workflow requires Native Helper startup'],
+  [workflow.includes('NEXA_PACKAGED_STARTUP_REPORT'),'packaged startup evidence published']
 ];
 const failed=checks.filter(([ok])=>!ok).map(([,name])=>name);
 if(failed.length)throw new Error('Implementation checks failed: '+failed.join(', '));

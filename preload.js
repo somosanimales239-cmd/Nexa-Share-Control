@@ -7,7 +7,7 @@ contextBridge.exposeInMainWorld('nexa', {
   startSharing: () => ipcRenderer.invoke('session:start-local'),
   stopSharing: () => ipcRenderer.invoke('session:stop'),
 
-  // v1.1.0: returns monitors AND capturable application/windows.
+  // v1.2.0: returns monitors AND capturable application/windows, including multi-selection metadata.
   listShareSources: () => ipcRenderer.invoke('screen:list-sources'),
   listScreenSources: () => ipcRenderer.invoke('screen:list-sources'),
   setShareSelection: sources => ipcRenderer.invoke('screen:set-selection', sources),

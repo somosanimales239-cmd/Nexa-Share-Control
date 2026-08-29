@@ -1,37 +1,56 @@
-NEXA SHARE CONTROL 1.1.0 - MANUAL DELIVERY
+NEXA SHARE CONTROL 1.2.0 - FULL MANUAL DELIVERY
 
-This ZIP is a FULL SOURCE REPLACEMENT for Nexa App Builder Pro Manual Delivery.
+USE THIS ZIP AS A FULL SOURCE DELIVERY FOR THE EXISTING Nexa-Share-Control PROJECT.
+Do not merge it into Nexa AI Local Bridge or Browser Relay.
 
-PURPOSE
-- Keep NexaShareControl isolated from Nexa AI Local Bridge / Browser Relay.
-- Build a Windows Electron app plus the native .NET 8 input helper.
-- Add selectable simultaneous sharing for:
-  * one or multiple monitors
-  * one or multiple running applications
-  * one or multiple individual Windows windows
-  * any combination of the above
+MAIN RELEASE CONTENT
+- startup-resilient Electron application
+- .NET 8 self-contained NexaShareControl.Native.exe build
+- multi-monitor + multi-application + multi-window source picker
+- simultaneous sharing for up to 16 selected capture sources
+- independent preview and frame metadata per source
+- monitor/window-targeted native pointer coordinates
+- Developer Test Mode
+- Builder-native validation matrix and Windows Delivery V3
+- packaged EXE startup evidence
+- installed EXE startup + Native Helper evidence
+- NSIS install / Apps & Features / uninstall / reinstall verification
 
-IMPORTANT BUILD ORDER
-1. npm install / npm ci
-2. npm run validate:delivery
-3. npm run validate
-4. npm run ui:smoke
-5. npm run build:win
+BUILD ORDER
+GitHub Actions performs dependency setup. The package build command is:
+  npm run build:native
+  npm run validate
+  electron-builder --win nsis portable zip --x64 --publish never
+  npm run verify:artifacts
 
-build:win MUST run build:native first. The Native Helper is copied to:
-resources/bin/NexaShareControl.Native.exe
-and electron-builder copies it to the installed app:
-resources/bin/NexaShareControl.Native.exe
+The Native Helper must exist before electron-builder runs at:
+  resources/bin/NexaShareControl.Native.exe
 
-WINDOWS OUTPUTS
-- NexaShareControl-Setup-1.1.0-x64.exe
-- NexaShareControl-Portable-1.1.0-x64.exe
-- NexaShareControl-1.1.0-x64.zip
+Installed/unpacked location:
+  resources/bin/NexaShareControl.Native.exe
 
-SAFETY
-Desktop control is OFF until START SHARING SELECTED is pressed.
-Emergency Stop: CTRL + SHIFT + F12.
-No keylogging and no UAC/security bypass are implemented.
+EXPECTED OUTPUTS
+- NexaShareControl-Setup-1.2.0-x64.exe
+- NexaShareControl-Portable-1.2.0-x64.exe
+- NexaShareControl-1.2.0-x64.zip
 
-SOURCE VALIDATION NOTE
-This source ZIP can be validated structurally here. The final Windows binaries must be built and startup-tested on Windows/GitHub Actions before being called Windows Build Verified.
+BUILDER CONTRACT
+Preserve:
+- NEXA_NODE_RUNTIME_RESOLUTION_V1
+- NEXA_APPLICATION_VERSION_METADATA_V1
+- NEXA_DEPENDENCY_LOCK_PORTABILITY_V1
+- NEXA_VALIDATION_MATRIX_V2
+- NEXA_WINDOWS_ARTIFACT_DELIVERY_V3
+
+FIRST WINDOWS TEST AFTER INSTALL
+1. Confirm NexaShareControl window opens.
+2. Run Full Diagnostics and confirm Native Helper running.
+3. Refresh share sources.
+4. Select one monitor and two different application windows.
+5. Start Sharing Selected and confirm three independent previews.
+6. Stop Sharing.
+7. Developer Test Mode: Move Cursor, Left Click, Scroll, Type Test Text, List Windows, Activate Window.
+8. Confirm CTRL+SHIFT+F12 stops an active session.
+
+SOURCE VALIDATED != WINDOWS BUILD VERIFIED.
+Only the successful GitHub Windows run can provide Windows Build Verified status.

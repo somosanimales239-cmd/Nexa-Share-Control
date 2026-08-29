@@ -18,14 +18,26 @@ internal static class NativeInput
 
     public static POINT GetCursor(){GetCursorPos(out var p);return p;}
 
+    static (int X,int Y,int Width,int Height) ResolveTarget(JsonObject q)
+    {
+        var windowId=q["window_id"]?.GetValue<long>()??0;
+        if(windowId!=0)
+        {
+            var w=WindowControl.Get(windowId);
+            if(w is not null&&w.Width>0&&w.Height>0)return(w.X,w.Y,w.Width,w.Height);
+        }
+        var m=MonitorInfo.Resolve(q["monitor_id"]?.GetValue<string>());
+        return(m.X,m.Y,m.Width,m.Height);
+    }
+
     public static void Move(JsonObject q)
     {
-        bool pix=q["pixels"]?.GetValue<bool>()??false;
+        bool pixels=q["pixels"]?.GetValue<bool>()??false;
         double x=q["x"]?.GetValue<double>()??0,y=q["y"]?.GetValue<double>()??0;
-        if(pix){SetCursorPos((int)Math.Round(x),(int)Math.Round(y));return;}
-        var m=MonitorInfo.Resolve(q["monitor_id"]?.GetValue<string>());
-        SetCursorPos(m.X+(int)Math.Round(Math.Clamp(x,0,1)*Math.Max(1,m.Width-1)),
-                     m.Y+(int)Math.Round(Math.Clamp(y,0,1)*Math.Max(1,m.Height-1)));
+        if(pixels){SetCursorPos((int)Math.Round(x),(int)Math.Round(y));return;}
+        var t=ResolveTarget(q);
+        SetCursorPos(t.X+(int)Math.Round(Math.Clamp(x,0,1)*Math.Max(1,t.Width-1)),
+                     t.Y+(int)Math.Round(Math.Clamp(y,0,1)*Math.Max(1,t.Height-1)));
     }
 
     static (uint,uint) F(string b)=>b.ToLowerInvariant() switch{"right"=>(RD,RU),"middle"=>(MD,MU),_=>(LD,LU)};
@@ -36,27 +48,27 @@ internal static class NativeInput
 
     public static void Drag(JsonObject q)
     {
-        var m=MonitorInfo.Resolve(q["monitor_id"]?.GetValue<string>());
+        var t=ResolveTarget(q);
         double x1=q["x1"]?.GetValue<double>()??0,y1=q["y1"]?.GetValue<double>()??0,
                x2=q["x2"]?.GetValue<double>()??0,y2=q["y2"]?.GetValue<double>()??0;
         int dur=Math.Clamp(q["duration_ms"]?.GetValue<int>()??500,50,5000);
         string b=q["button"]?.GetValue<string>()??"left";
-        int sx=m.X+(int)(Math.Clamp(x1,0,1)*(m.Width-1)),sy=m.Y+(int)(Math.Clamp(y1,0,1)*(m.Height-1)),
-            ex=m.X+(int)(Math.Clamp(x2,0,1)*(m.Width-1)),ey=m.Y+(int)(Math.Clamp(y2,0,1)*(m.Height-1));
+        int sx=t.X+(int)(Math.Clamp(x1,0,1)*Math.Max(1,t.Width-1)),sy=t.Y+(int)(Math.Clamp(y1,0,1)*Math.Max(1,t.Height-1)),
+            ex=t.X+(int)(Math.Clamp(x2,0,1)*Math.Max(1,t.Width-1)),ey=t.Y+(int)(Math.Clamp(y2,0,1)*Math.Max(1,t.Height-1));
         SetCursorPos(sx,sy);Button(b,true);
         int steps=Math.Clamp(dur/12,5,240);
-        for(int i=1;i<=steps;i++){double t=(double)i/steps;SetCursorPos((int)Math.Round(sx+(ex-sx)*t),(int)Math.Round(sy+(ey-sy)*t));Thread.Sleep(Math.Max(1,dur/steps));}
+        for(int i=1;i<=steps;i++){double v=(double)i/steps;SetCursorPos((int)Math.Round(sx+(ex-sx)*v),(int)Math.Round(sy+(ey-sy)*v));Thread.Sleep(Math.Max(1,dur/steps));}
         Button(b,false);
     }
 
-    public static void TypeText(string t)
+    public static void TypeText(string text)
     {
-        foreach(var ch in t)
+        foreach(var ch in text)
         {
             ushort c=ch;
-            var d=new INPUT{type=IK,U=new U{ki=new KEYBDINPUT{wScan=c,dwFlags=KUNI}}},
-                u=new INPUT{type=IK,U=new U{ki=new KEYBDINPUT{wScan=c,dwFlags=KUNI|KUP}}};
-            SendInput(2,[d,u],Marshal.SizeOf<INPUT>());
+            var down=new INPUT{type=IK,U=new U{ki=new KEYBDINPUT{wScan=c,dwFlags=KUNI}}},
+                up=new INPUT{type=IK,U=new U{ki=new KEYBDINPUT{wScan=c,dwFlags=KUNI|KUP}}};
+            SendInput(2,[down,up],Marshal.SizeOf<INPUT>());
         }
     }
 
@@ -66,15 +78,15 @@ internal static class NativeInput
         {"ARROWRIGHT",39},{"SHIFT",16},{"CTRL",17},{"CONTROL",17},{"ALT",18},{"WINDOWS",91},{"WIN",91}
     };
 
-    static ushort Vk(string k)
+    static ushort Vk(string key)
     {
-        if(K.TryGetValue(k,out var v))return v;
-        if(k.Length==1){char c=char.ToUpperInvariant(k[0]);if(char.IsLetterOrDigit(c))return c;}
-        if(k.StartsWith("F",StringComparison.OrdinalIgnoreCase)&&int.TryParse(k[1..],out int f)&&f>=1&&f<=12)return(ushort)(0x70+f-1);
-        throw new ArgumentException($"unsupported_key:{k}");
+        if(K.TryGetValue(key,out var value))return value;
+        if(key.Length==1){char c=char.ToUpperInvariant(key[0]);if(char.IsLetterOrDigit(c))return c;}
+        if(key.StartsWith("F",StringComparison.OrdinalIgnoreCase)&&int.TryParse(key[1..],out int f)&&f>=1&&f<=12)return(ushort)(0x70+f-1);
+        throw new ArgumentException($"unsupported_key:{key}");
     }
 
-    public static void Key(string k,bool down){var i=new INPUT{type=IK,U=new U{ki=new KEYBDINPUT{wVk=Vk(k),dwFlags=down?0:KUP}}};SendInput(1,[i],Marshal.SizeOf<INPUT>());}
-    public static void KeyTap(string k){Key(k,true);Key(k,false);}
-    public static void Combo(string[] ks){foreach(var k in ks)Key(k,true);for(int i=ks.Length-1;i>=0;i--)Key(ks[i],false);}
+    public static void Key(string key,bool down){var input=new INPUT{type=IK,U=new U{ki=new KEYBDINPUT{wVk=Vk(key),dwFlags=down?0:KUP}}};SendInput(1,[input],Marshal.SizeOf<INPUT>());}
+    public static void KeyTap(string key){Key(key,true);Key(key,false);}
+    public static void Combo(string[] keys){foreach(var key in keys)Key(key,true);for(int i=keys.Length-1;i>=0;i--)Key(keys[i],false);}
 }

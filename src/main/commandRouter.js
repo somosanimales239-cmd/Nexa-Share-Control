@@ -13,7 +13,7 @@ class CommandRouter{
       if(c.type==='session.status')return this.ack(c,true,this.session.publicState());
       if(c.type==='session.stop'){await this.session.stop('remote');return this.ack(c,true,{stopped:true})}
       if(c.type==='screen.snapshot'){this.forceFrame();return this.ack(c,true,{requested:true})}
-      const native=new Set(['mouse.move','mouse.click','mouse.double_click','mouse.down','mouse.up','mouse.drag','mouse.wheel','keyboard.text','keyboard.key','keyboard.key_down','keyboard.key_up','keyboard.combo','window.list','window.activate','window.get_active','monitor.list']);
+      const native=new Set(['mouse.move','mouse.click','mouse.double_click','mouse.down','mouse.up','mouse.drag','mouse.wheel','keyboard.text','keyboard.key','keyboard.key_down','keyboard.key_up','keyboard.combo','window.list','window.activate','window.get','window.get_active','monitor.list']);
       if(native.has(c.type)){
         const r=await this.helper.request({cmd:c.type,...(c.payload||{})},c.type==='mouse.drag'?10000:5000);
         this.logger.info(`${c.type} executed${c.type==='keyboard.text'?` length=${String(c.payload?.text||'').length}`:''}`);

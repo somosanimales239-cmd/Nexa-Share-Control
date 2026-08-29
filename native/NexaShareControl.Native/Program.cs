@@ -34,7 +34,7 @@ internal static class Program
         JsonObject Ok() => new() { ["id"] = id, ["ok"] = true };
         switch (cmd)
         {
-            case "ping": { var r = Ok(); r["pong"] = true; r["version"] = "1.1.0"; return r; }
+            case "ping": { var r = Ok(); r["pong"] = true; r["version"] = "1.2.0"; return r; }
             case "cursor.get": { var p = NativeInput.GetCursor(); var r = Ok(); r["x"] = p.X; r["y"] = p.Y; r["dpi_scale"] = MonitorInfo.GetScaleAtPoint(p.X,p.Y); return r; }
             case "mouse.move": NativeInput.Move(req); return Ok();
             case "mouse.click": NativeInput.Click(req["button"]?.GetValue<string>() ?? "left",1); return Ok();
@@ -54,6 +54,7 @@ internal static class Program
             }
             case "window.list": { var r = Ok(); r["windows"] = JsonSerializer.SerializeToNode(WindowControl.ListWindows(),JsonOptions); return r; }
             case "window.activate": { var r = Ok(); r["activated"] = WindowControl.Activate(new IntPtr(req["window_id"]?.GetValue<long>() ?? 0)); return r; }
+            case "window.get": { var r = Ok(); var w = WindowControl.Get(req["window_id"]?.GetValue<long>() ?? 0); r["window"] = w is null ? null : JsonSerializer.SerializeToNode(w,JsonOptions); return r; }
             case "window.get_active":
             {
                 var a = WindowControl.GetActive(); var r = Ok();

@@ -1,20 +1,15 @@
+'use strict';
 const fs=require('fs');
 const path=require('path');
 const root=path.resolve(__dirname,'..');
-
-const html=fs.readFileSync(path.join(root,'src/index.html'),'utf8');
-const capture=fs.readFileSync(path.join(root,'src/renderer/screenCapture.js'),'utf8');
-const nativeProgram=fs.readFileSync(path.join(root,'native/NexaShareControl.Native/Program.cs'),'utf8');
-
-const requiredIds=['refreshSourcesBtn','selectScreensBtn','clearSourcesBtn','sourcePicker','selectedSourceCount','previewGrid','startBtn','stopBtn','snapshotBtn'];
+const read=f=>fs.readFileSync(path.join(root,f),'utf8');
+const html=read('src/index.html');
+const capture=read('src/renderer/screenCapture.js');
+const main=read('main.js');
+const nativeProgram=read('native/NexaShareControl.Native/Program.cs');
+const requiredIds=['refreshSourcesBtn','selectScreensBtn','selectAllSourcesBtn','clearSourcesBtn','sourceSearch','sourcePicker','selectedSourceCount','previewGrid','startBtn','stopBtn','snapshotBtn','diagBtn'];
 for(const id of requiredIds)if(!html.includes(`id="${id}"`))throw new Error(`UI acceptance missing #${id}`);
-
-for(const token of ['chromeMediaSourceId','snapshotAll','groupedWindows','source_bounds','app_process_name']){
-  if(!capture.includes(token))throw new Error(`Capture acceptance missing ${token}`);
-}
-
-for(const command of ['mouse.move','mouse.click','mouse.drag','mouse.wheel','keyboard.text','window.list','window.activate','monitor.list']){
-  if(!nativeProgram.includes(`"${command}"`))throw new Error(`Native command missing ${command}`);
-}
-
+for(const token of ['chromeMediaSourceId','snapshotAll','groupedWindows','source_bounds','app_process_name','share_set_id','maxSources=16'])if(!capture.includes(token))throw new Error(`Capture acceptance missing ${token}`);
+for(const token of ['rendererReady','startupComplete','helperAvailable','NEXA_STARTUP_SMOKE_FILE'])if(!main.includes(token))throw new Error(`Startup acceptance missing ${token}`);
+for(const command of ['mouse.move','mouse.click','mouse.drag','mouse.wheel','keyboard.text','window.list','window.activate','window.get','monitor.list'])if(!nativeProgram.includes(`"${command}"`))throw new Error(`Native command missing ${command}`);
 console.log('ACCEPTANCE_TEST_OK');
