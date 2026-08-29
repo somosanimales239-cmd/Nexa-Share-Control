@@ -4,7 +4,7 @@
     "type": "electron",
     "version": "1.0.0",
     "application_version": "1.0.0",
-    "workspace_revision": "1.0.6",
+    "workspace_revision": "1.0.8",
     "target": "windows",
-    "updated_at": "2026-08-29 16:20:48"
+    "updated_at": "2026-08-29 16:26:47"
 }
