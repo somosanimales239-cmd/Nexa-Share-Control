@@ -172,62 +172,221 @@ function parseWindowId(sourceId) {
   return raw;
 }
 
+function normalizeWindowTitle(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[–—]/g, '-')
+    .replace(/\s+/g, ' ');
+}
+
+function sourceImageData(source, field) {
+  try {
+    const image = source?.[field];
+    if (image && !image.isEmpty()) return image.toDataURL();
+  } catch {}
+  return '';
+}
+
 async function discoverShareSources() {
+  // IMPORTANT: the native Windows enumerator is the source of truth for open
+  // applications/windows. desktopCapturer is only the capture backend. This
+  // means apps such as Unity remain visible in the picker even when Chromium
+  // does not expose a direct window capture source for them.
   let nativeWindows = [];
   if (helper?.proc) {
     try {
-      const result = await helper.request({ cmd:'window.list' }, 2500);
-      nativeWindows = result.windows || [];
+      const result = await helper.request({ cmd:'window.list' }, 3000);
+      nativeWindows = Array.isArray(result.windows) ? result.windows : [];
     } catch (error) {
       noteIssue('Window metadata discovery', error);
     }
   }
 
-  const nativeMap = new Map(nativeWindows.map(item => [String(item.window_id), item]));
-  const displays = new Map();
-  try {
-    for (const display of screen.getAllDisplays()) displays.set(String(display.id), display);
-  } catch {}
+  let displays = [];
+  try { displays = screen.getAllDisplays(); } catch {}
 
-  const sources = await desktopCapturer.getSources({
+  const electronSources = await desktopCapturer.getSources({
     types:['screen','window'],
     thumbnailSize:{ width:360, height:220 },
     fetchWindowIcons:true
   });
 
-  return sources.map(source => {
-    const type = String(source.id).startsWith('screen:') ? 'screen' : 'window';
-    const nativeWindowId = type === 'window' ? parseWindowId(source.id) : '';
-    const nativeWindow = nativeMap.get(nativeWindowId) || null;
-    const display = type === 'screen' ? displays.get(String(source.display_id || '')) : null;
+  const electronScreens = electronSources.filter(source => String(source.id).startsWith('screen:'));
+  const electronWindows = electronSources.filter(source => String(source.id).startsWith('window:'));
 
-    let thumbnail = '';
-    let appIcon = '';
-    try { if (source.thumbnail && !source.thumbnail.isEmpty()) thumbnail = source.thumbnail.toDataURL(); } catch {}
-    try { if (source.appIcon && !source.appIcon.isEmpty()) appIcon = source.appIcon.toDataURL(); } catch {}
-
-    const bounds = type === 'screen' && display ? {
-      x:display.bounds.x, y:display.bounds.y,
-      width:display.bounds.width, height:display.bounds.height
-    } : nativeWindow ? {
-      x:nativeWindow.x, y:nativeWindow.y,
-      width:nativeWindow.width, height:nativeWindow.height
-    } : null;
-
-    return {
-      id:source.id,
-      name:source.name,
-      type,
-      displayId:source.display_id || '',
-      thumbnail,
-      appIcon,
-      nativeWindowId,
-      processName:nativeWindow?.process_name || '',
-      isMinimized:!!nativeWindow?.is_minimized,
-      bounds,
-      scaleFactor:display?.scaleFactor || 1
-    };
+  const screenByDisplayId = new Map();
+  electronScreens.forEach((source, index) => {
+    const displayId = String(source.display_id || '');
+    if (displayId) screenByDisplayId.set(displayId, source);
+    // Some Electron/Windows combinations omit display_id. Preserve a safe
+    // index fallback so monitor and region capture still work.
+    const display = displays[index];
+    if (display && !screenByDisplayId.has(String(display.id))) {
+      screenByDisplayId.set(String(display.id), source);
+    }
   });
+
+  const directByWindowId = new Map();
+  for (const source of electronWindows) {
+    const id = parseWindowId(source.id);
+    if (id) directByWindowId.set(id, source);
+  }
+
+  const windowsByTitle = new Map();
+  for (const source of electronWindows) {
+    const key = normalizeWindowTitle(source.name);
+    if (!key) continue;
+    if (!windowsByTitle.has(key)) windowsByTitle.set(key, []);
+    windowsByTitle.get(key).push(source);
+  }
+
+  const usedElectronWindows = new Set();
+  const output = [];
+
+  // Always expose physical monitors.
+  electronScreens.forEach((source, index) => {
+    const displayId = String(source.display_id || displays[index]?.id || '');
+    const display = displays.find(item => String(item.id) === displayId) || displays[index] || null;
+    output.push({
+      id:`monitor:${displayId || source.id}`,
+      captureSourceId:source.id,
+      captureMode:'monitor-direct',
+      capturable:true,
+      name:source.name || `Monitor ${index + 1}`,
+      type:'screen',
+      displayId,
+      thumbnail:sourceImageData(source, 'thumbnail'),
+      appIcon:'',
+      nativeWindowId:'',
+      processId:0,
+      processName:'',
+      isMinimized:false,
+      bounds:display ? {
+        x:display.bounds.x, y:display.bounds.y,
+        width:display.bounds.width, height:display.bounds.height
+      } : null,
+      captureDisplayBounds:display ? { ...display.bounds } : null,
+      scaleFactor:display?.scaleFactor || 1,
+      captureWarning:''
+    });
+  });
+
+  function findDirectWindow(nativeWindow) {
+    const nativeId = String(nativeWindow.window_id || '');
+    const byId = directByWindowId.get(nativeId);
+    if (byId && !usedElectronWindows.has(byId.id)) return byId;
+
+    const titleKey = normalizeWindowTitle(nativeWindow.title);
+    const exact = windowsByTitle.get(titleKey) || [];
+    const exactFree = exact.find(source => !usedElectronWindows.has(source.id));
+    if (exactFree) return exactFree;
+
+    // Last-resort title matching handles decorations added by Electron/Windows
+    // around the same native HWND title.
+    if (titleKey.length >= 5) {
+      return electronWindows.find(source => {
+        if (usedElectronWindows.has(source.id)) return false;
+        const candidate = normalizeWindowTitle(source.name);
+        return candidate.length >= 5 && (candidate.includes(titleKey) || titleKey.includes(candidate));
+      }) || null;
+    }
+    return null;
+  }
+
+  function displayForBounds(bounds) {
+    try {
+      if (bounds && bounds.width > 0 && bounds.height > 0) return screen.getDisplayMatching(bounds);
+    } catch {}
+    try { return screen.getPrimaryDisplay(); } catch { return displays[0] || null; }
+  }
+
+  // Native visible windows are authoritative. Every one is listed, even when
+  // direct Chromium window capture is unavailable. In that case we fall back
+  // to capturing/cropping the monitor region occupied by that window.
+  for (const nativeWindow of nativeWindows) {
+    const nativeWindowId = String(nativeWindow.window_id || '');
+    if (!nativeWindowId) continue;
+
+    const bounds = {
+      x:Number(nativeWindow.x || 0),
+      y:Number(nativeWindow.y || 0),
+      width:Math.max(0, Number(nativeWindow.width || 0)),
+      height:Math.max(0, Number(nativeWindow.height || 0))
+    };
+    if (bounds.width <= 0 || bounds.height <= 0) continue;
+
+    const direct = findDirectWindow(nativeWindow);
+    if (direct) usedElectronWindows.add(direct.id);
+
+    const display = displayForBounds(bounds);
+    const fallbackScreen = display ? screenByDisplayId.get(String(display.id)) : null;
+    const minimized = !!nativeWindow.is_minimized;
+    const captureSourceId = direct?.id || fallbackScreen?.id || '';
+    const captureMode = direct ? 'window-direct' : fallbackScreen ? 'window-region' : 'unavailable';
+    const capturable = !!captureSourceId && (!minimized || !!direct);
+
+    let warning = '';
+    if (minimized) warning = 'Window is minimized. NexaShareControl can restore it before sharing.';
+    else if (captureMode === 'window-region') warning = 'Direct window capture unavailable; using the visible window region on its monitor.';
+    else if (!capturable) warning = 'No Windows capture backend is currently available for this window.';
+
+    output.push({
+      id:`window:${nativeWindowId}`,
+      captureSourceId,
+      captureMode,
+      capturable,
+      name:String(nativeWindow.title || direct?.name || '(untitled)'),
+      type:'window',
+      displayId:display ? String(display.id) : '',
+      thumbnail:sourceImageData(direct, 'thumbnail'),
+      appIcon:sourceImageData(direct, 'appIcon'),
+      nativeWindowId,
+      processId:Number(nativeWindow.process_id || 0),
+      processName:String(nativeWindow.process_name || 'Windows Application'),
+      isMinimized:minimized,
+      bounds,
+      captureDisplayBounds:display ? {
+        x:display.bounds.x, y:display.bounds.y,
+        width:display.bounds.width, height:display.bounds.height
+      } : null,
+      scaleFactor:display?.scaleFactor || 1,
+      captureWarning:warning
+    });
+  }
+
+  // Keep Electron-only windows too. This covers unusual app/window types that
+  // Chromium can capture but EnumWindows did not expose through our filters.
+  for (const source of electronWindows) {
+    if (usedElectronWindows.has(source.id)) continue;
+    const rawId = parseWindowId(source.id);
+    output.push({
+      id:`electron-window:${rawId || source.id}`,
+      captureSourceId:source.id,
+      captureMode:'window-direct',
+      capturable:true,
+      name:source.name || '(untitled)',
+      type:'window',
+      displayId:'',
+      thumbnail:sourceImageData(source, 'thumbnail'),
+      appIcon:sourceImageData(source, 'appIcon'),
+      nativeWindowId:rawId,
+      processId:0,
+      processName:'Windows Application',
+      isMinimized:false,
+      bounds:null,
+      captureDisplayBounds:null,
+      scaleFactor:1,
+      captureWarning:''
+    });
+  }
+
+  const monitors = output.filter(source => source.type === 'screen');
+  const windows = output.filter(source => source.type === 'window').sort((a,b) => {
+    const p = String(a.processName || '').localeCompare(String(b.processName || ''));
+    return p || String(a.name || '').localeCompare(String(b.name || ''));
+  });
+  return [...monitors, ...windows];
 }
 
 function registerIpc() {
@@ -277,11 +436,23 @@ function registerIpc() {
     }
   });
 
-  // v1.2.1: monitors and open application/windows are selectable at the same time.
+  // v1.3.0: monitors and open application/windows are selectable at the same time.
   ipcMain.handle('screen:list-sources', async () => {
     try { return await discoverShareSources(); }
     catch (error) {
       noteIssue('Share source discovery', error);
+      return [];
+    }
+  });
+
+  ipcMain.handle('screen:resolve-sources', async (_event, ids) => {
+    try {
+      const wanted = new Set((Array.isArray(ids) ? ids : []).map(id => String(id || '')).filter(Boolean));
+      if (!wanted.size) return [];
+      const sources = await discoverShareSources();
+      return sources.filter(source => wanted.has(source.id));
+    } catch (error) {
+      noteIssue('Share source refresh', error);
       return [];
     }
   });
@@ -292,7 +463,9 @@ function registerIpc() {
       name:String(source?.name || ''),
       type:source?.type === 'screen' ? 'screen' : 'window',
       processName:String(source?.processName || ''),
-      nativeWindowId:String(source?.nativeWindowId || '')
+      processId:Number(source?.processId || 0),
+      nativeWindowId:String(source?.nativeWindowId || ''),
+      captureMode:String(source?.captureMode || '')
     })).filter(source => source.id) : [];
     selectedShareSources = clean;
     pushState();
@@ -420,7 +593,7 @@ async function initializeBackgroundSystems() {
   try {
     const { AppLogger } = require('./src/main/logger');
     logger = new AppLogger(app.getPath('userData'));
-    logger.info('NexaShareControl 1.2.1 startup begun');
+    logger.info('NexaShareControl 1.3.0 startup begun');
     for (const issue of startupIssues) logger.warn(`pre-logger ${issue.area}: ${issue.message}`);
   } catch (error) { noteIssue('Logger', error); }
 

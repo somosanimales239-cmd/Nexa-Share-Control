@@ -20,3 +20,12 @@ test('multi-source sharing files exist',()=>{
   assert.match(capture,/source_count/);
   assert.match(capture,/share_set_id/);
 });
+test('universal open-window inventory has direct and visible-region capture paths',()=>{
+  const main=fs.readFileSync(path.join(root,'main.js'),'utf8');
+  const capture=fs.readFileSync(path.join(root,'src/renderer/screenCapture.js'),'utf8');
+  assert.match(main,/native Windows enumerator is the source of truth/i);
+  assert.match(main,/window-region/);
+  assert.match(main,/screen:resolve-sources/);
+  assert.match(capture,/captureSourceId/);
+  assert.match(capture,/ASSIGN APP/);
+});

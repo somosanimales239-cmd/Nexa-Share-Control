@@ -63,3 +63,27 @@ pre{white-space:pre-wrap;word-break:break-word;max-height:320px;overflow:auto;ba
 
 @media(max-width:1100px){.cards{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.panel-head{flex-direction:column}.row.compact{justify-content:flex-start}}
 .source-filter-row{display:grid;grid-template-columns:minmax(260px,520px) 1fr;gap:14px;align-items:end;margin-top:12px}.source-filter-row label{margin:0}.source-filter-row .muted{padding-bottom:10px}@media(max-width:800px){.source-filter-row{grid-template-columns:1fr}}
+
+/* v1.3 universal Windows/application inventory */
+.app-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.app-card{display:grid;grid-template-columns:48px 1fr auto;gap:10px;align-items:center;border:1px solid #2d4154;border-radius:11px;background:#101a24;padding:10px}
+.app-icon{width:48px;height:48px;border-radius:10px;background:#071019;border:1px solid #31485c;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#9fc3e4;overflow:hidden}
+.app-icon img{width:100%;height:100%;object-fit:contain}
+.app-card-body{min-width:0;display:flex;flex-direction:column;gap:3px}
+.app-card-body strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app-card-body span{font-size:10px;color:#8396a8}
+.app-assign{white-space:nowrap}
+.source-card.unavailable{opacity:.7}
+.source-thumb-fallback{font-size:12px;font-weight:900;letter-spacing:1px;color:#7695b1;padding:14px;text-align:center}
+.capture-mode{position:absolute;right:7px;top:7px;background:#0b5e48dd;border:1px solid #3c8f73;padding:3px 6px;border-radius:6px;font-size:8px;font-weight:900;letter-spacing:.4px}
+.capture-mode.fallback{background:#735518dd;border-color:#a47d2f}
+.source-warning{margin-top:6px;font-size:9px;line-height:1.35;color:#d6b66e}
+.source-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px}
+.source-actions input{width:auto;margin:0}
+.source-actions button{padding:7px 9px;font-size:9px}
+.assign-source{background:#153f32}
+.source-card.selected .assign-source{background:#0d6c49}
+.activate-source{background:#1d2a37}
+.preview-tile .capture-video-hidden{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.preview-canvas{width:100%;height:100%;min-height:200px;object-fit:contain;display:block;background:#020508}
+@media(max-width:760px){.app-card{grid-template-columns:42px 1fr}.app-assign{grid-column:1/-1}.app-icon{width:42px;height:42px}}

@@ -1,37 +1,40 @@
-NexaShareControl 1.2.1 - FIRST RUN CHECKLIST
+NexaShareControl 1.3.0 - FIRST RUN CHECKLIST
 
 OPEN / STARTUP
 [ ] NexaShareControl opens normally from Desktop/Start Menu.
-[ ] Version badge shows 1.2.1.
+[ ] Version badge shows 1.3.0.
 [ ] Diagnostics shows startupComplete=true.
 [ ] Diagnostics shows helper.available=true and helper.running=true.
 
-SHARE SOURCE PICKER
-[ ] REFRESH WINDOWS lists monitors and open windows.
-[ ] Search filters by app/window title.
-[ ] SELECT APP selects multiple windows for one program.
-[ ] SELECT MONITORS works.
-[ ] SELECT ALL VISIBLE works up to the 16-source safety limit.
+UNIVERSAL WINDOW / PROGRAM DISCOVERY
+[ ] Keep Unity open before starting this test.
+[ ] OPEN APPLICATIONS contains Unity (or the actual Unity process name on the PC).
+[ ] WINDOWS · Unity contains the open Unity editor/project window.
+[ ] Search for "Unity" returns the Unity application/window.
+[ ] ASSIGN APP assigns all open Unity windows.
+[ ] ASSIGN TO SHARE assigns one individual Unity window.
+[ ] ACTIVATE / RESTORE WINDOW brings that Windows window to the foreground.
+[ ] Open another normal Windows app after NexaShareControl is already open and verify it appears automatically within a few seconds.
 
-MULTI-SOURCE SHARE
-[ ] Select at least 3 sources from different types/apps.
-[ ] START SHARING SELECTED opens one preview tile per captured source.
-[ ] Source picker locks while sharing.
-[ ] STOP SHARING stops all capture streams and unlocks selection.
-[ ] Normal Stop keeps the chosen source selection ready for another run.
+MONITORS / MULTI-SOURCE
+[ ] SELECT MONITORS works.
+[ ] SELECT ALL VISIBLE works up to the 16-source limit.
+[ ] Assign Unity + a browser + Explorer + a monitor at the same time.
+[ ] START SHARING SELECTED opens one preview per captured source.
+[ ] DIRECT WINDOW or VISIBLE REGION is shown for each window source.
+[ ] STOP SHARING stops all streams and preserves the assignment for another run.
 
 NATIVE CONTROL
 [ ] MOVE CURSOR TO CENTER works.
 [ ] LEFT CLICK TEST works.
 [ ] SCROLL TEST works.
-[ ] TYPE TEST TEXT works in the focused test field/application.
-[ ] LIST WINDOWS returns open Windows windows.
-[ ] ACTIVATE brings a selected window to the foreground.
+[ ] TYPE TEST TEXT works in the focused application.
+[ ] LIST WINDOWS returns the current Windows top-level window inventory.
 
 SAFETY
 [ ] Desktop Control is OFF after launch.
 [ ] CTRL+SHIFT+F12 stops an active control session.
 [ ] Closing and reopening the app does not create duplicate NexaShareControl processes.
 
-If a test fails, use RUN FULL DIAGNOSTICS and the log at:
+If a test fails, run FULL DIAGNOSTICS and use:
 %APPDATA%\NexaShareControl\logs\NexaShareControl.log

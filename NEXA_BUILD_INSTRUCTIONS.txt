@@ -1,4 +1,4 @@
-NEXA SHARE CONTROL 1.2.1 - FULL MANUAL DELIVERY
+NEXA SHARE CONTROL 1.3.0 - FULL MANUAL DELIVERY
 
 USE THIS ZIP AS A FULL SOURCE DELIVERY FOR THE EXISTING Nexa-Share-Control PROJECT.
 Do not merge it into Nexa AI Local Bridge or Browser Relay.
@@ -6,9 +6,16 @@ Do not merge it into Nexa AI Local Bridge or Browser Relay.
 MAIN RELEASE CONTENT
 - startup-resilient Electron application
 - .NET 8 self-contained NexaShareControl.Native.exe build
-- multi-monitor + multi-application + multi-window source picker
-- simultaneous sharing for up to 16 selected capture sources
+- Windows-native open-application/window inventory (EnumWindows is the source of truth)
+- Unity and other normal visible Windows programs remain assignable even if Electron does not expose a direct window source
+- DIRECT WINDOW capture when Chromium exposes the native window
+- VISIBLE REGION fallback using the monitor containing an otherwise unmatched native window
+- automatic open-window inventory refresh while idle
+- application-level ASSIGN APP plus individual ASSIGN TO SHARE
+- multi-monitor + multi-application + multi-window sharing
+- simultaneous sharing for up to 16 assigned sources
 - independent preview and frame metadata per source
+- live source re-resolution while sharing
 - monitor/window-targeted native pointer coordinates
 - Developer Test Mode
 - Builder-native validation matrix and Windows Delivery V3
@@ -30,9 +37,9 @@ Installed/unpacked location:
   resources/bin/NexaShareControl.Native.exe
 
 EXPECTED OUTPUTS
-- NexaShareControl-Setup-1.2.1-x64.exe
-- NexaShareControl-Portable-1.2.1-x64.exe
-- NexaShareControl-1.2.1-x64.zip
+- NexaShareControl-Setup-1.3.0-x64.exe
+- NexaShareControl-Portable-1.3.0-x64.exe
+- NexaShareControl-1.3.0-x64.zip
 
 BUILDER CONTRACT
 Preserve:
@@ -43,13 +50,13 @@ Preserve:
 - NEXA_WINDOWS_ARTIFACT_DELIVERY_V3
 
 FIRST WINDOWS TEST AFTER INSTALL
-1. Confirm NexaShareControl window opens.
-2. Run Full Diagnostics and confirm Native Helper running.
-3. Refresh share sources.
-4. Select one monitor and two different application windows.
-5. Start Sharing Selected and confirm three independent previews.
-6. Stop Sharing.
-7. Developer Test Mode: Move Cursor, Left Click, Scroll, Type Test Text, List Windows, Activate Window.
+1. Open Unity before NexaShareControl.
+2. Confirm NexaShareControl opens and Native Helper is running.
+3. Confirm OPEN APPLICATIONS shows Unity and the WINDOWS · Unity group shows the editor/project window.
+4. Assign Unity, a browser, Explorer and one monitor simultaneously.
+5. Start Sharing Selected and confirm independent previews.
+6. Open another desktop program and verify it appears automatically after Stop/while idle.
+7. Run Developer Test Mode: Move Cursor, Left Click, Scroll, Type Test Text, List Windows, Activate Window.
 8. Confirm CTRL+SHIFT+F12 stops an active session.
 
 SOURCE VALIDATED != WINDOWS BUILD VERIFIED.
