@@ -277,7 +277,7 @@ function registerIpc() {
     }
   });
 
-  // v1.2.0: monitors and open application/windows are selectable at the same time.
+  // v1.2.1: monitors and open application/windows are selectable at the same time.
   ipcMain.handle('screen:list-sources', async () => {
     try { return await discoverShareSources(); }
     catch (error) {
@@ -420,7 +420,7 @@ async function initializeBackgroundSystems() {
   try {
     const { AppLogger } = require('./src/main/logger');
     logger = new AppLogger(app.getPath('userData'));
-    logger.info('NexaShareControl 1.2.0 startup begun');
+    logger.info('NexaShareControl 1.2.1 startup begun');
     for (const issue of startupIssues) logger.warn(`pre-logger ${issue.area}: ${issue.message}`);
   } catch (error) { noteIssue('Logger', error); }
 

@@ -1,10 +1,12 @@
-# NexaShareControl 1.2.0
+# NexaShareControl 1.2.1
+
+> FULL MANUAL DELIVERY replacement. This release includes the complete 1.2.x feature set and fixes the Native Helper C# compiler failure `CS0819` found in GitHub Actions run 33278537731.
 
 NexaShareControl is the dedicated Windows application for visual desktop sharing and native mouse/keyboard control. It remains isolated from Nexa AI Local Bridge, Nexa Local, Browser Relay, SFTP, GitHub automation and Unity projects.
 
 ## Release goal
 
-1.2.0 is a consolidated Manual Delivery release intended to avoid a chain of small repair updates. It combines the startup repair, Native Helper packaging, Builder V3 delivery contract and multi-source sharing work in one source package.
+1.2.1 is a consolidated Manual Delivery release intended to avoid a chain of small repair updates. It combines the startup repair, Native Helper packaging, Builder V3 delivery contract and multi-source sharing work in one source package.
 
 ## Multi-source screen sharing
 
@@ -67,10 +69,10 @@ The Windows workflow configures Node.js and .NET 8, builds the Native Helper bef
 
 ## Expected Windows outputs
 
-- `NexaShareControl-Setup-1.2.0-x64.exe`
-- `NexaShareControl-Portable-1.2.0-x64.exe`
-- `NexaShareControl-1.2.0-x64.zip`
+- `NexaShareControl-Setup-1.2.1-x64.exe`
+- `NexaShareControl-Portable-1.2.1-x64.exe`
+- `NexaShareControl-1.2.1-x64.zip`
 
 ## Validation status
 
-The source package is structurally and statically validated before delivery. Final `WINDOWS BUILD VERIFIED` status must only be claimed after Nexa App Builder Pro pushes 1.2.0 to GitHub Actions and the Windows workflow completes successfully.
+The source package is structurally and statically validated before delivery. Final `WINDOWS BUILD VERIFIED` status must only be claimed after Nexa App Builder Pro pushes 1.2.1 to GitHub Actions and the Windows workflow completes successfully.

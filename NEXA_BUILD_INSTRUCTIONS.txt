@@ -1,4 +1,4 @@
-NEXA SHARE CONTROL 1.2.0 - FULL MANUAL DELIVERY
+NEXA SHARE CONTROL 1.2.1 - FULL MANUAL DELIVERY
 
 USE THIS ZIP AS A FULL SOURCE DELIVERY FOR THE EXISTING Nexa-Share-Control PROJECT.
 Do not merge it into Nexa AI Local Bridge or Browser Relay.
@@ -30,9 +30,9 @@ Installed/unpacked location:
   resources/bin/NexaShareControl.Native.exe
 
 EXPECTED OUTPUTS
-- NexaShareControl-Setup-1.2.0-x64.exe
-- NexaShareControl-Portable-1.2.0-x64.exe
-- NexaShareControl-1.2.0-x64.zip
+- NexaShareControl-Setup-1.2.1-x64.exe
+- NexaShareControl-Portable-1.2.1-x64.exe
+- NexaShareControl-1.2.1-x64.zip
 
 BUILDER CONTRACT
 Preserve:

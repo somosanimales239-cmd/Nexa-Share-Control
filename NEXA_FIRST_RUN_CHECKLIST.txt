@@ -1,8 +1,8 @@
-NexaShareControl 1.2.0 - FIRST RUN CHECKLIST
+NexaShareControl 1.2.1 - FIRST RUN CHECKLIST
 
 OPEN / STARTUP
 [ ] NexaShareControl opens normally from Desktop/Start Menu.
-[ ] Version badge shows 1.2.0.
+[ ] Version badge shows 1.2.1.
 [ ] Diagnostics shows startupComplete=true.
 [ ] Diagnostics shows helper.available=true and helper.running=true.
 

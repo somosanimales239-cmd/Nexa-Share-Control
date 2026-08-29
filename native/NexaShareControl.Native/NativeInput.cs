@@ -66,8 +66,8 @@ internal static class NativeInput
         foreach(var ch in text)
         {
             ushort c=ch;
-            var down=new INPUT{type=IK,U=new U{ki=new KEYBDINPUT{wScan=c,dwFlags=KUNI}}},
-                up=new INPUT{type=IK,U=new U{ki=new KEYBDINPUT{wScan=c,dwFlags=KUNI|KUP}}};
+            var down=new INPUT{type=IK,U=new U{ki=new KEYBDINPUT{wScan=c,dwFlags=KUNI}}};
+            var up=new INPUT{type=IK,U=new U{ki=new KEYBDINPUT{wScan=c,dwFlags=KUNI|KUP}}};
             SendInput(2,[down,up],Marshal.SizeOf<INPUT>());
         }
     }

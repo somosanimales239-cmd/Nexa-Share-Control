@@ -12,22 +12,22 @@
   {
     "path": "NEXA_BUILD_INSTRUCTIONS.txt",
     "bytes": 2099,
-    "sha256": "c9959188612b430d09102dbc01fedaa52a0739858135952c1bb170a303c05f06"
+    "sha256": "e442f0eac88ca5edd9a8a89b6160f6adc036b9cae92ee648fb4422b2a3ef83c0"
   },
   {
     "path": "NEXA_FIRST_RUN_CHECKLIST.txt",
     "bytes": 1421,
-    "sha256": "90c39c144bcc77a39a717f4e92fba00896a0c8980ac28de0f707c5c67c161363"
+    "sha256": "92a90a5b343eb8dab5c798be6fb45a55cd28e72e08eb9c72db9b8928ba454586"
   },
   {
     "path": "README.md",
-    "bytes": 4305,
-    "sha256": "9d8cf8acc3ed99af7c6e59dd727f566c3352f9a6142c5e9bc5eced8531d8f48d"
+    "bytes": 4493,
+    "sha256": "a75c19a633b468dfa70680200af9b1d33510222f689984ab46634c37e9dc341a"
   },
   {
     "path": "main.js",
     "bytes": 17538,
-    "sha256": "b2c06d8c5dd636cf278de8f65988301b95c36783fb0f5e0eb1877e871554e1f8"
+    "sha256": "076159bc04fc57aa91ba816c6a0fa4c5cff90939ad521076deb70cd2ead47b6d"
   },
   {
     "path": "native/NexaShareControl.Native/MonitorInfo.cs",
@@ -37,7 +37,7 @@
   {
     "path": "native/NexaShareControl.Native/NativeInput.cs",
     "bytes": 5150,
-    "sha256": "4ba05a6c4ded9afd17137802fd147e4e7fad576cb8e48d1c828fad63eddb6455"
+    "sha256": "2b67eaba529659ee9adf10fca4445b2503c833cc30d1464850e04325ed990151"
   },
   {
     "path": "native/NexaShareControl.Native/NexaShareControl.Native.csproj",
@@ -47,7 +47,7 @@
   {
     "path": "native/NexaShareControl.Native/Program.cs",
     "bytes": 3947,
-    "sha256": "06dd3aea620686e562ef2f792da39d4f181a577f7da2059db61c49ca4d8615d4"
+    "sha256": "946c1f0091aa1874f50b01d7fa0b679da5f27499b51c0b15a2c65c14e4a759c2"
   },
   {
     "path": "native/NexaShareControl.Native/WindowControl.cs",
@@ -57,17 +57,17 @@
   {
     "path": "nexa.project.json",
     "bytes": 240,
-    "sha256": "990d8ab8bc82053c5eecae0b067ae8ec49cd4f81b0fe540074bcb50b935f07f2"
+    "sha256": "d192e519c933d3a6d4dc6943d77e5254c93046f8c0ad5478fb128e146ca3ab73"
   },
   {
     "path": "package.json",
     "bytes": 2896,
-    "sha256": "714afb0b1309fb4ee33ddaa83fb39fdca3bfb44ee2eef84251299aad96f2912d"
+    "sha256": "86d833cb97eed8d8080f77015c893c5916a0edbe109171ad5420de8aa760bfad"
   },
   {
     "path": "preload.js",
     "bytes": 1330,
-    "sha256": "ee8d26268b9e1bd73fded45e8ca6bc8b00c0a074e9eae9c26310f11034d51409"
+    "sha256": "61ad6e4b18dadf7f5ab9c873afbf2821930f904f03cd5e4893cd0523b1b5d9ad"
   },
   {
     "path": "scripts/acceptance-test.js",
@@ -122,7 +122,7 @@
   {
     "path": "src/index.html",
     "bytes": 5937,
-    "sha256": "4d48bf48575eda6ec1cca400c6c14ba397230bba4376bb91ab6a7510cc37cb61"
+    "sha256": "3c29c2d58b89e4c378585369163a3afa5685645b6ad15ae8bb470071805a55c1"
   },
   {
     "path": "src/main/commandRouter.js",

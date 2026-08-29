@@ -1,6 +1,6 @@
 {
   "name": "nexa-share-control",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Secure Windows visual desktop control with multi-monitor, multi-application and multi-window sharing; Builder V3 delivery verified",
   "main": "main.js",
   "private": true,
