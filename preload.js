@@ -1,9 +1,24 @@
 const { contextBridge, ipcRenderer } = require('electron');
+
 contextBridge.exposeInMainWorld('nexa', {
-  getState:()=>ipcRenderer.invoke('app:get-state'), saveSettings:v=>ipcRenderer.invoke('settings:save',v), pairDevice:c=>ipcRenderer.invoke('device:pair',c),
-  startSharing:()=>ipcRenderer.invoke('session:start-local'), stopSharing:()=>ipcRenderer.invoke('session:stop'), listScreenSources:()=>ipcRenderer.invoke('screen:list-sources'),
-  sendFrame:p=>ipcRenderer.invoke('screen:frame',p), nativeCommand:c=>ipcRenderer.invoke('native:command',c), listWindows:()=>ipcRenderer.invoke('window:list'),
-  activateWindow:id=>ipcRenderer.invoke('window:activate',id), runDiagnostics:()=>ipcRenderer.invoke('diagnostics:run'),
-  onState:cb=>ipcRenderer.on('state:update',(_e,s)=>cb(s)), onForceFrame:cb=>ipcRenderer.on('screen:force-frame',cb),
-  onEmergencyStopped:cb=>ipcRenderer.on('session:emergency-stopped',cb)
+  getState: () => ipcRenderer.invoke('app:get-state'),
+  saveSettings: values => ipcRenderer.invoke('settings:save', values),
+  pairDevice: code => ipcRenderer.invoke('device:pair', code),
+  startSharing: () => ipcRenderer.invoke('session:start-local'),
+  stopSharing: () => ipcRenderer.invoke('session:stop'),
+
+  // v1.1.0: returns monitors AND capturable application/windows.
+  listShareSources: () => ipcRenderer.invoke('screen:list-sources'),
+  listScreenSources: () => ipcRenderer.invoke('screen:list-sources'),
+  setShareSelection: sources => ipcRenderer.invoke('screen:set-selection', sources),
+  sendFrame: packet => ipcRenderer.invoke('screen:frame', packet),
+
+  nativeCommand: command => ipcRenderer.invoke('native:command', command),
+  listWindows: () => ipcRenderer.invoke('window:list'),
+  activateWindow: id => ipcRenderer.invoke('window:activate', id),
+  runDiagnostics: () => ipcRenderer.invoke('diagnostics:run'),
+
+  onState: callback => ipcRenderer.on('state:update', (_event, state) => callback(state)),
+  onForceFrame: callback => ipcRenderer.on('screen:force-frame', callback),
+  onEmergencyStopped: callback => ipcRenderer.on('session:emergency-stopped', callback)
 });

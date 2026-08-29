@@ -1,7 +1,8 @@
 node_modules/
-dist/
-resources/bin/*.exe
+release/
+artifacts/
+resources/bin/
 native/**/bin/
 native/**/obj/
 *.log
-.env
+.DS_Store

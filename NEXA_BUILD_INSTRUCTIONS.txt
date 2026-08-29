@@ -1,23 +1,37 @@
-NexaShareControl 1.0.1 - COMPLETE REPLACEMENT
+NEXA SHARE CONTROL 1.1.0 - MANUAL DELIVERY
 
-PURPOSE OF THIS RELEASE
-- Fixes installed application silently closing/not opening.
-- Main window now opens BEFORE native helper/network initialization.
-- Native helper, tray, transport, security, or hotkey failure can no longer close the whole application.
-- Adds dedicated NexaShareControl Electron user-data isolation.
-- Adds startup issue reporting in the application and Diagnostics.
-- Does NOT modify or depend on Nexa AI Local Bridge, Nexa Local, Browser Relay, SFTP Publisher, or existing Unity projects.
+This ZIP is a FULL SOURCE REPLACEMENT for Nexa App Builder Pro Manual Delivery.
 
-MANUAL DELIVERY
-1. Upload this ONE ZIP as a complete source replacement for Nexa Share Control.
-2. Do not combine with 1.0.0 patches.
-3. Apply staged files once.
-4. Confirm application version 1.0.1.
-5. Run Local build validation.
-6. Push to GitHub & Build.
-7. Install NexaShareControl Setup 1.0.1 over the previous version.
+PURPOSE
+- Keep NexaShareControl isolated from Nexa AI Local Bridge / Browser Relay.
+- Build a Windows Electron app plus the native .NET 8 input helper.
+- Add selectable simultaneous sharing for:
+  * one or multiple monitors
+  * one or multiple running applications
+  * one or multiple individual Windows windows
+  * any combination of the above
 
-EXPECTED STARTUP
-- NexaShareControl window must open even if the native helper has a problem.
-- If a background component fails, the application stays open and displays the exact issue.
-- Diagnostics reports the helper path, user-data path, and startup issues.
+IMPORTANT BUILD ORDER
+1. npm install / npm ci
+2. npm run validate:delivery
+3. npm run validate
+4. npm run ui:smoke
+5. npm run build:win
+
+build:win MUST run build:native first. The Native Helper is copied to:
+resources/bin/NexaShareControl.Native.exe
+and electron-builder copies it to the installed app:
+resources/bin/NexaShareControl.Native.exe
+
+WINDOWS OUTPUTS
+- NexaShareControl-Setup-1.1.0-x64.exe
+- NexaShareControl-Portable-1.1.0-x64.exe
+- NexaShareControl-1.1.0-x64.zip
+
+SAFETY
+Desktop control is OFF until START SHARING SELECTED is pressed.
+Emergency Stop: CTRL + SHIFT + F12.
+No keylogging and no UAC/security bypass are implemented.
+
+SOURCE VALIDATION NOTE
+This source ZIP can be validated structurally here. The final Windows binaries must be built and startup-tested on Windows/GitHub Actions before being called Windows Build Verified.

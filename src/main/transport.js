@@ -1,1 +1,87 @@
-const{WebSocket}=require('ws');class TransportManager{constructor(config,security,session,logger){this.config=config;this.security=security;this.session=session;this.logger=logger;this.running=false;this.connected=false;this.paired=!!config.data.paired;this.commandHandler=null;this.pollAbort=null;this.ws=null}setCommandHandler(f){this.commandHandler=f}applyConfig(){if(this.running)this.restart()}publicState(){return{connected:this.connected,paired:this.paired,transport:this.config.data.transport||'AUTO'}}base(){const u=(this.config.data.serverUrl||'').trim();return u.endsWith('/')?u:u?u+'/':''}headers(){const t=this.security.deviceToken();return{'Content-Type':'application/json','X-Nexa-Protocol':'NEXA-SHARE-CONTROL/1',...(t?{Authorization:`Bearer ${t}`}:{})}}async pairDevice(code){if(!this.base())return{ok:false,error:'server_not_configured'};try{const r=await fetch(this.base()+'device/register',{method:'POST',headers:this.headers(),body:JSON.stringify({protocol_version:1,device_id:this.security.deviceId(),device_secret:this.security.deviceSecret(),device_name:this.config.data.deviceName,pairing_code:code})}),d=await r.json().catch(()=>({}));if(!r.ok||!d.device_token)return{ok:false,error:d.error||`http_${r.status}`};await this.security.storeDeviceToken(d.device_token);this.paired=true;return{ok:true}}catch(e){return{ok:false,error:e.message}}}start(){if(!this.running){this.running=true;this.loop()}}async restart(){await this.stop();this.start()}async stop(){this.running=false;this.connected=false;try{this.pollAbort?.abort()}catch{};try{this.ws?.close()}catch{}}clearPendingCommands(){try{this.pollAbort?.abort()}catch{};this.pollAbort=null}async loop(){while(this.running){if(!this.base()||!this.security.deviceToken()){this.connected=false;await new Promise(r=>setTimeout(r,1500));continue}const mode=(this.config.data.transport||'AUTO').toUpperCase();if((mode==='AUTO'||mode==='WSS')&&this.config.data.wssUrl){const ok=await this.tryWs();if(ok)continue;if(mode==='WSS'){await new Promise(r=>setTimeout(r,1500));continue}}await this.poll()}}async tryWs(){return new Promise(resolve=>{let settled=false;const done=x=>{if(!settled){settled=true;resolve(x)}},ws=new WebSocket(this.config.data.wssUrl,{headers:{Authorization:`Bearer ${this.security.deviceToken()}`,'X-Nexa-Device':this.security.deviceId()}});this.ws=ws;const tm=setTimeout(()=>{try{ws.terminate()}catch{};done(false)},5000);ws.on('open',()=>{clearTimeout(tm);this.connected=true;ws.send(JSON.stringify({type:'device.hello',device_id:this.security.deviceId(),protocol_version:1}))});ws.on('message',async d=>{try{const m=JSON.parse(String(d));if(m.type==='command')await this.commandHandler?.(m.command)}catch(e){this.logger.warn(e.message)}});ws.on('close',async()=>{this.connected=false;if(this.session.isActive())await this.session.stop('network_lost');done(true)});ws.on('error',()=>done(false))})}async poll(){this.pollAbort=new AbortController();const tm=setTimeout(()=>this.pollAbort?.abort(),25000);try{const q=new URLSearchParams({device_id:this.security.deviceId(),session_id:this.session.sessionId()||'',timeout:'20'}),r=await fetch(this.base()+'commands/poll?'+q,{headers:this.headers(),signal:this.pollAbort.signal});this.connected=r.ok;if(!r.ok)throw new Error(`poll_http_${r.status}`);const d=await r.json().catch(()=>({commands:[]}));for(const c of d.commands||[])await this.commandHandler?.(c)}catch(e){if(e.name!=='AbortError')this.logger.warn(`poll ${e.message}`);this.connected=false;if(this.session.isActive())await this.session.stop('network_lost');await new Promise(r=>setTimeout(r,800))}finally{clearTimeout(tm);this.pollAbort=null}}async ackCommand(p){if(!this.base()||!this.security.deviceToken())return{ok:false};const r=await fetch(this.base()+'commands/ack',{method:'POST',headers:this.headers(),body:JSON.stringify({device_id:this.security.deviceId(),session_id:this.session.sessionId(),...p})});return{ok:r.ok}}async sendFrame(p){if(!this.base()||!this.security.deviceToken()||!this.session.isActive())return{ok:false,error:'server_unavailable'};const fd=new FormData(),meta={...p.metadata,protocol_version:1,device_id:this.security.deviceId(),session_id:this.session.sessionId()};fd.append('metadata',JSON.stringify(meta));fd.append('frame',new Blob([Buffer.from(p.jpegBase64,'base64')],{type:'image/jpeg'}),`frame-${meta.frame_id}.jpg`);const r=await fetch(this.base()+'frame/upload',{method:'POST',headers:{Authorization:`Bearer ${this.security.deviceToken()}`,'X-Nexa-Protocol':'NEXA-SHARE-CONTROL/1'},body:fd});return{ok:r.ok}}async diagnostics(){return{configured:!!this.base(),connected:this.connected,https:this.base().startsWith('https://')||this.base().startsWith('http://localhost'),authentication:!!this.security.deviceToken(),paired:this.paired,transport:this.config.data.transport||'AUTO'}}}module.exports={TransportManager};
+const {WebSocket}=require('ws');
+class TransportManager{
+  constructor(config,security,session,logger){
+    this.config=config;this.security=security;this.session=session;this.logger=logger;
+    this.running=false;this.connected=false;this.paired=!!config.data.paired;this.commandHandler=null;this.pollAbort=null;this.ws=null;
+  }
+  setCommandHandler(f){this.commandHandler=f}
+  applyConfig(){if(this.running)this.restart()}
+  publicState(){return{connected:this.connected,paired:this.paired,transport:this.config.data.transport||'AUTO'}}
+  base(){const u=(this.config.data.serverUrl||'').trim();return u.endsWith('/')?u:u?u+'/':''}
+  headers(){const t=this.security.deviceToken();return{'Content-Type':'application/json','X-Nexa-Protocol':'NEXA-SHARE-CONTROL/1',...(t?{Authorization:`Bearer ${t}`}:{})}}
+  async pairDevice(code){
+    if(!this.base())return{ok:false,error:'server_not_configured'};
+    try{
+      const r=await fetch(this.base()+'device/register',{method:'POST',headers:this.headers(),body:JSON.stringify({
+        protocol_version:1,device_id:this.security.deviceId(),device_secret:this.security.deviceSecret(),
+        device_name:this.config.data.deviceName,pairing_code:code
+      })});
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok||!d.device_token)return{ok:false,error:d.error||`http_${r.status}`};
+      await this.security.storeDeviceToken(d.device_token);this.paired=true;return{ok:true};
+    }catch(e){return{ok:false,error:e.message}}
+  }
+  start(){if(!this.running){this.running=true;this.loop()}}
+  async restart(){await this.stop();this.start()}
+  async stop(){this.running=false;this.connected=false;try{this.pollAbort?.abort()}catch{};try{this.ws?.close()}catch{}}
+  clearPendingCommands(){try{this.pollAbort?.abort()}catch{};this.pollAbort=null}
+  async loop(){
+    while(this.running){
+      if(!this.base()||!this.security.deviceToken()){this.connected=false;await new Promise(r=>setTimeout(r,1500));continue}
+      const mode=(this.config.data.transport||'AUTO').toUpperCase();
+      if((mode==='AUTO'||mode==='WSS')&&this.config.data.wssUrl){
+        const ok=await this.tryWs();if(ok)continue;
+        if(mode==='WSS'){await new Promise(r=>setTimeout(r,1500));continue}
+      }
+      await this.poll();
+    }
+  }
+  async tryWs(){
+    return new Promise(resolve=>{
+      let settled=false;
+      const done=x=>{if(!settled){settled=true;resolve(x)}};
+      const ws=new WebSocket(this.config.data.wssUrl,{headers:{Authorization:`Bearer ${this.security.deviceToken()}`,'X-Nexa-Device':this.security.deviceId()}});
+      this.ws=ws;
+      const tm=setTimeout(()=>{try{ws.terminate()}catch{};done(false)},5000);
+      ws.on('open',()=>{clearTimeout(tm);this.connected=true;ws.send(JSON.stringify({type:'device.hello',device_id:this.security.deviceId(),protocol_version:1}))});
+      ws.on('message',async d=>{try{const m=JSON.parse(String(d));if(m.type==='command')await this.commandHandler?.(m.command)}catch(e){this.logger.warn(e.message)}});
+      ws.on('close',async()=>{this.connected=false;if(this.session.isActive())await this.session.stop('network_lost');done(true)});
+      ws.on('error',()=>done(false));
+    });
+  }
+  async poll(){
+    this.pollAbort=new AbortController();const tm=setTimeout(()=>this.pollAbort?.abort(),25000);
+    try{
+      const q=new URLSearchParams({device_id:this.security.deviceId(),session_id:this.session.sessionId()||'',timeout:'20'});
+      const r=await fetch(this.base()+'commands/poll?'+q,{headers:this.headers(),signal:this.pollAbort.signal});
+      this.connected=r.ok;if(!r.ok)throw new Error(`poll_http_${r.status}`);
+      const d=await r.json().catch(()=>({commands:[]}));
+      for(const c of d.commands||[])await this.commandHandler?.(c);
+    }catch(e){
+      if(e.name!=='AbortError')this.logger.warn(`poll ${e.message}`);
+      this.connected=false;
+      if(this.session.isActive())await this.session.stop('network_lost');
+      await new Promise(r=>setTimeout(r,800));
+    }finally{clearTimeout(tm);this.pollAbort=null}
+  }
+  async ackCommand(p){
+    if(!this.base()||!this.security.deviceToken())return{ok:false};
+    const r=await fetch(this.base()+'commands/ack',{method:'POST',headers:this.headers(),body:JSON.stringify({
+      device_id:this.security.deviceId(),session_id:this.session.sessionId(),...p
+    })});
+    return{ok:r.ok};
+  }
+  async sendFrame(p){
+    if(!this.base()||!this.security.deviceToken()||!this.session.isActive())return{ok:false,error:'server_unavailable'};
+    const fd=new FormData();
+    const meta={...p.metadata,protocol_version:1,device_id:this.security.deviceId(),session_id:this.session.sessionId()};
+    fd.append('metadata',JSON.stringify(meta));
+    fd.append('frame',new Blob([Buffer.from(p.jpegBase64,'base64')],{type:'image/jpeg'}),`frame-${meta.frame_id}-${meta.source_index||0}.jpg`);
+    const r=await fetch(this.base()+'frame/upload',{method:'POST',headers:{
+      Authorization:`Bearer ${this.security.deviceToken()}`,'X-Nexa-Protocol':'NEXA-SHARE-CONTROL/1'
+    },body:fd});
+    return{ok:r.ok};
+  }
+  async diagnostics(){return{configured:!!this.base(),connected:this.connected,https:this.base().startsWith('https://')||this.base().startsWith('http://localhost'),authentication:!!this.security.deviceToken(),paired:this.paired,transport:this.config.data.transport||'AUTO'}}
+}
+module.exports={TransportManager};

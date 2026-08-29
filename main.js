@@ -7,15 +7,16 @@ const {
   Tray,
   Menu,
   globalShortcut,
-  desktopCapturer
+  desktopCapturer,
+  screen
 } = require('electron');
 
-// NexaShareControl owns a dedicated Electron data directory. It does not reuse
-// Nexa AI Local Bridge, Nexa Local, Relay, or any other Nexa application's state.
+// Dedicated data directory. This application remains independent from
+// Nexa AI Local Bridge, Nexa Local and Nexa ChatGPT Browser Relay.
 try {
   app.setName('NexaShareControl');
-  const dedicatedUserData = path.join(app.getPath('appData'), 'NexaShareControl');
-  app.setPath('userData', dedicatedUserData);
+  app.setPath('userData', path.join(app.getPath('appData'), 'NexaShareControl'));
+  if (process.platform === 'win32') app.setAppUserModelId('com.nexa.sharecontrol');
 } catch {}
 
 let win = null;
@@ -29,12 +30,13 @@ let router = null;
 let transport = null;
 let startupComplete = false;
 let startupIssues = [];
+let selectedShareSources = [];
 
 function noteIssue(area, error) {
   const message = error && error.message ? error.message : String(error || 'Unknown error');
   const record = { area, message, at: new Date().toISOString() };
   startupIssues.push(record);
-  if (startupIssues.length > 20) startupIssues = startupIssues.slice(-20);
+  if (startupIssues.length > 30) startupIssues = startupIssues.slice(-30);
   try { logger?.error(`${area}: ${message}`); } catch {}
   try { console.error(`[${area}]`, error); } catch {}
 }
@@ -44,8 +46,13 @@ function publicConfig() {
 }
 
 function sessionState() {
-  try { return session?.publicState?.() || { active:false, sessionId:'', remoteInputEnabled:false, screenSharing:false }; }
-  catch { return { active:false, sessionId:'', remoteInputEnabled:false, screenSharing:false }; }
+  try {
+    return session?.publicState?.() || {
+      active:false, sessionId:'', remoteInputEnabled:false, screenSharing:false
+    };
+  } catch {
+    return { active:false, sessionId:'', remoteInputEnabled:false, screenSharing:false };
+  }
 }
 
 function transportState() {
@@ -74,7 +81,8 @@ function state() {
     config: publicConfig(),
     session: sessionState(),
     transport: transportState(),
-    helper: helperState()
+    helper: helperState(),
+    shareSelection: selectedShareSources
   };
 }
 
@@ -86,10 +94,10 @@ function pushState() {
 
 function createWindow() {
   win = new BrowserWindow({
-    width: 1280,
-    height: 860,
-    minWidth: 1000,
-    minHeight: 700,
+    width: 1380,
+    height: 920,
+    minWidth: 1040,
+    minHeight: 720,
     show: true,
     title: 'NexaShareControl',
     backgroundColor: '#0b0f14',
@@ -101,7 +109,7 @@ function createWindow() {
     }
   });
 
-  win.on('close', (event) => {
+  win.on('close', event => {
     if (!app.isQuitting) {
       event.preventDefault();
       win.hide();
@@ -112,10 +120,82 @@ function createWindow() {
     noteIssue('UI load', new Error(`${code}: ${description}`));
   });
 
-  win.loadFile(path.join(__dirname, 'src', 'index.html')).catch((error) => {
+  win.loadFile(path.join(__dirname, 'src', 'index.html')).catch(error => {
     noteIssue('UI load', error);
     const safe = String(error.message || error).replace(/[<>&]/g, '');
-    win.loadURL(`data:text/html;charset=utf-8,<body style="font-family:Segoe UI;background:%230b0f14;color:white;padding:40px"><h1>NexaShareControl</h1><h2>Startup UI error</h2><p>${encodeURIComponent(safe)}</p><p>The application is running. Reinstall the current complete package.</p></body>`).catch(()=>{});
+    const body = `<body style="font-family:Segoe UI;background:#0b0f14;color:white;padding:40px">
+      <h1>NexaShareControl</h1><h2>Startup UI error</h2><p>${safe}</p>
+      <p>The application is running. Reinstall the current complete package.</p></body>`;
+    win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(body)).catch(()=>{});
+  });
+}
+
+function parseWindowId(sourceId) {
+  const match = /^window:([^:]+):/i.exec(String(sourceId || ''));
+  if (!match) return '';
+  const raw = match[1];
+  try {
+    if (/^0x/i.test(raw)) return BigInt(raw).toString();
+    if (/^\d+$/.test(raw)) return BigInt(raw).toString();
+  } catch {}
+  return raw;
+}
+
+async function discoverShareSources() {
+  let nativeWindows = [];
+  if (helper?.proc) {
+    try {
+      const result = await helper.request({ cmd:'window.list' }, 2500);
+      nativeWindows = result.windows || [];
+    } catch (error) {
+      noteIssue('Window metadata discovery', error);
+    }
+  }
+
+  const nativeMap = new Map(nativeWindows.map(item => [String(item.window_id), item]));
+  const displays = new Map();
+  try {
+    for (const display of screen.getAllDisplays()) displays.set(String(display.id), display);
+  } catch {}
+
+  const sources = await desktopCapturer.getSources({
+    types:['screen','window'],
+    thumbnailSize:{ width:360, height:220 },
+    fetchWindowIcons:true
+  });
+
+  return sources.map(source => {
+    const type = String(source.id).startsWith('screen:') ? 'screen' : 'window';
+    const nativeWindowId = type === 'window' ? parseWindowId(source.id) : '';
+    const nativeWindow = nativeMap.get(nativeWindowId) || null;
+    const display = type === 'screen' ? displays.get(String(source.display_id || '')) : null;
+
+    let thumbnail = '';
+    let appIcon = '';
+    try { if (source.thumbnail && !source.thumbnail.isEmpty()) thumbnail = source.thumbnail.toDataURL(); } catch {}
+    try { if (source.appIcon && !source.appIcon.isEmpty()) appIcon = source.appIcon.toDataURL(); } catch {}
+
+    const bounds = type === 'screen' && display ? {
+      x:display.bounds.x, y:display.bounds.y,
+      width:display.bounds.width, height:display.bounds.height
+    } : nativeWindow ? {
+      x:nativeWindow.x, y:nativeWindow.y,
+      width:nativeWindow.width, height:nativeWindow.height
+    } : null;
+
+    return {
+      id:source.id,
+      name:source.name,
+      type,
+      displayId:source.display_id || '',
+      thumbnail,
+      appIcon,
+      nativeWindowId,
+      processName:nativeWindow?.process_name || '',
+      isMinimized:!!nativeWindow?.is_minimized,
+      bounds,
+      scaleFactor:display?.scaleFactor || 1
+    };
   });
 }
 
@@ -158,6 +238,7 @@ function registerIpc() {
     if (!session) return { ok:true };
     try {
       const result = await session.stop('local');
+      selectedShareSources = [];
       pushState();
       return result;
     } catch (error) {
@@ -166,19 +247,26 @@ function registerIpc() {
     }
   });
 
+  // v1.1.0: monitors and open application/windows are selectable at the same time.
   ipcMain.handle('screen:list-sources', async () => {
-    try {
-      const sources = await desktopCapturer.getSources({ types:['screen'], thumbnailSize:{ width:320, height:180 } });
-      return sources.map(source => ({
-        id: source.id,
-        name: source.name,
-        displayId: source.display_id || '',
-        thumbnail: source.thumbnail.toDataURL()
-      }));
-    } catch (error) {
-      noteIssue('Screen source discovery', error);
+    try { return await discoverShareSources(); }
+    catch (error) {
+      noteIssue('Share source discovery', error);
       return [];
     }
+  });
+
+  ipcMain.handle('screen:set-selection', (_event, sources) => {
+    const clean = Array.isArray(sources) ? sources.slice(0, 24).map(source => ({
+      id:String(source?.id || ''),
+      name:String(source?.name || ''),
+      type:source?.type === 'screen' ? 'screen' : 'window',
+      processName:String(source?.processName || ''),
+      nativeWindowId:String(source?.nativeWindowId || '')
+    })).filter(source => source.id) : [];
+    selectedShareSources = clean;
+    pushState();
+    return { ok:true, selected:clean.length };
   });
 
   ipcMain.handle('screen:frame', async (_event, packet) => {
@@ -208,25 +296,29 @@ function registerIpc() {
 
   ipcMain.handle('diagnostics:run', async () => {
     const result = {
-      appVersion: app.getVersion(),
-      protocolVersion: 1,
-      electron: process.versions.electron,
-      node: process.versions.node,
-      windows: process.getSystemVersion(),
-      userData: app.getPath('userData'),
+      appVersion:app.getVersion(),
+      protocolVersion:1,
+      electron:process.versions.electron,
+      node:process.versions.node,
+      windows:process.getSystemVersion(),
+      userData:app.getPath('userData'),
       startupComplete,
       startupIssues,
-      helper: helperState(),
-      transport: transportState(),
-      session: sessionState(),
-      monitors: [],
-      cursor: null
+      helper:helperState(),
+      transport:transportState(),
+      session:sessionState(),
+      shareSelection:selectedShareSources,
+      monitors:[],
+      windows:[],
+      cursor:null
     };
     if (helper?.proc) {
       try { result.helperHealth = await helper.healthCheck(); } catch (error) { result.helperHealth = { ok:false, error:error.message }; }
       try { result.monitors = (await helper.request({ cmd:'monitor.list' })).monitors || []; } catch {}
+      try { result.windows = (await helper.request({ cmd:'window.list' })).windows || []; } catch {}
       try { result.cursor = await helper.request({ cmd:'cursor.get' }); } catch {}
     }
+    try { result.shareSources = await discoverShareSources(); } catch {}
     try { if (transport) result.transportDiagnostics = await transport.diagnostics(); } catch {}
     return result;
   });
@@ -234,14 +326,14 @@ function registerIpc() {
 
 function createTraySafely() {
   try {
-    const iconPath = path.join(__dirname, 'src', 'assets', 'tray.png');
-    tray = new Tray(iconPath);
+    tray = new Tray(path.join(__dirname, 'src', 'assets', 'tray.png'));
     const rebuild = () => {
       const active = !!session?.isActive?.();
       tray.setToolTip(active ? 'NexaShareControl - ACTIVE' : 'NexaShareControl - OFF');
       tray.setContextMenu(Menu.buildFromTemplate([
         { label:'Open NexaShareControl', click:()=>{ win?.show(); win?.focus(); } },
         { label:`Status: ${active ? 'ACTIVE' : 'OFF'}`, enabled:false },
+        { label:`Selected sources: ${selectedShareSources.length}`, enabled:false },
         { type:'separator' },
         { label:'Start Sharing', enabled:!active, click:()=>session?.startLocalSession?.() },
         { label:'Stop Sharing', enabled:active, click:()=>session?.stop?.('tray') },
@@ -254,13 +346,32 @@ function createTraySafely() {
     tray.on('double-click', () => { win?.show(); win?.focus(); });
   } catch (error) {
     noteIssue('System tray', error);
-    // Tray failure must never prevent the main window from opening.
   }
 }
 
+function writeStartupSmoke() {
+  const target = process.env.NEXA_STARTUP_SMOKE_FILE;
+  if (!target) return;
+  try {
+    fs.mkdirSync(path.dirname(target), { recursive:true });
+    fs.writeFileSync(target, JSON.stringify({
+      ok:true,
+      version:app.getVersion(),
+      startupComplete,
+      startupIssues,
+      helper:helperState(),
+      userData:app.getPath('userData')
+    }, null, 2), 'utf8');
+  } catch (error) {
+    noteIssue('Startup smoke report', error);
+  }
+  setTimeout(() => {
+    app.isQuitting = true;
+    app.quit();
+  }, 700);
+}
+
 async function initializeBackgroundSystems() {
-  // Every component below is isolated. A failure is reported in Diagnostics,
-  // but it must never close NexaShareControl's main window.
   try {
     const { ConfigStore } = require('./src/main/config');
     config = new ConfigStore(app.getPath('userData'));
@@ -270,7 +381,8 @@ async function initializeBackgroundSystems() {
   try {
     const { AppLogger } = require('./src/main/logger');
     logger = new AppLogger(app.getPath('userData'));
-    logger.info('NexaShareControl 1.0.1 startup begun');
+    logger.info('NexaShareControl 1.1.0 startup begun');
+    for (const issue of startupIssues) logger.warn(`pre-logger ${issue.area}: ${issue.message}`);
   } catch (error) { noteIssue('Logger', error); }
 
   try {
@@ -303,9 +415,11 @@ async function initializeBackgroundSystems() {
   try {
     if (helper?.proc && transport && session) {
       const { CommandRouter } = require('./src/main/commandRouter');
-      router = new CommandRouter(helper, session, transport, logger || { info(){}, warn(){}, error(){} }, () => {
-        try { win?.webContents.send('screen:force-frame'); } catch {}
-      });
+      router = new CommandRouter(
+        helper, session, transport,
+        logger || { info(){}, warn(){}, error(){} },
+        () => { try { win?.webContents.send('screen:force-frame'); } catch {} }
+      );
       transport.setCommandHandler(command => router.handle(command));
     }
   } catch (error) { noteIssue('Command router', error); }
@@ -316,6 +430,7 @@ async function initializeBackgroundSystems() {
     const registered = globalShortcut.register('CommandOrControl+Shift+F12', async () => {
       try { await session?.emergencyStop?.(); } catch {}
       try { transport?.clearPendingCommands?.(); } catch {}
+      selectedShareSources = [];
       try { win?.webContents.send('session:emergency-stopped'); } catch {}
       pushState();
     });
@@ -327,23 +442,20 @@ async function initializeBackgroundSystems() {
   startupComplete = true;
   try { logger?.info(`NexaShareControl startup complete; issues=${startupIssues.length}`); } catch {}
   pushState();
+  writeStartupSmoke();
 }
 
 async function boot() {
   registerIpc();
   createWindow();
   pushState();
-  // Do not block opening the UI on native helper, networking, or any other module.
   setTimeout(() => initializeBackgroundSystems().catch(error => noteIssue('Background initialization', error)), 100);
   setInterval(pushState, 1500).unref?.();
 }
 
 app.whenReady().then(boot).catch(error => {
   noteIssue('Electron ready', error);
-  // Last-resort visible window instead of silently quitting.
-  try {
-    createWindow();
-  } catch {}
+  try { createWindow(); } catch {}
 });
 
 app.on('activate', () => {
@@ -360,7 +472,4 @@ app.on('before-quit', async () => {
   try { await helper?.stop?.(); } catch {}
 });
 
-app.on('window-all-closed', () => {
-  // Keep running only if the user closed the window to tray. If tray creation
-  // failed, the process may remain available through the taskbar until Exit.
-});
+app.on('window-all-closed', () => {});

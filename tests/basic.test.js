@@ -1,1 +1,20 @@
-const test=require('node:test'),assert=require('node:assert/strict');test('normalized coordinates support negative monitor origin',()=>{const m={x:-1920,y:0,width:1920,height:1080},x=m.x+Math.round(.5*(m.width-1));assert.ok(x<0)});test('duplicate IDs compare exactly',()=>{const s=new Set(['abc']);assert.equal(s.has('abc'),true);assert.equal(s.has('ABC'),false)});test('expired threshold',()=>assert.equal(120001>120000,true));
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('fs');
+const path=require('path');
+const root=path.resolve(__dirname,'..');
+
+test('project is NexaShareControl 1.1.0',()=>{
+  const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
+  assert.equal(pkg.name,'nexa-share-control');
+  assert.equal(pkg.version,'1.1.0');
+  assert.match(pkg.scripts['build:win'],/build:native/);
+});
+
+test('multi-source sharing exists',()=>{
+  const main=fs.readFileSync(path.join(root,'main.js'),'utf8');
+  const capture=fs.readFileSync(path.join(root,'src/renderer/screenCapture.js'),'utf8');
+  assert.match(main,/screen','window/);
+  assert.match(capture,/source_count/);
+  assert.match(capture,/groupedWindows/);
+});

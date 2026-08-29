@@ -1,1 +1,24 @@
-const fs=require('fs'),path=require('path'),r=path.join(__dirname,'..');const c=[['native mouse','native/NexaShareControl.Native/NativeInput.cs','SetCursorPos'],['native keyboard','native/NexaShareControl.Native/NativeInput.cs','SendInput'],['screen capture','src/renderer/screenCapture.js','getUserMedia'],['emergency hotkey','main.js','CommandOrControl+Shift+F12'],['duplicate protection','src/main/commandRouter.js','duplicate_command'],['long polling','src/main/transport.js','commands/poll'],['frame upload','src/main/transport.js','frame/upload'],['window activation','native/NexaShareControl.Native/WindowControl.cs','SetForegroundWindow']];let b=0;for(const[n,f,s]of c){const ok=fs.readFileSync(path.join(r,f),'utf8').includes(s);console.log(`${n}: ${ok?'PASS':'FAIL'}`);if(!ok)b++}if(b)process.exit(1);console.log('IMPLEMENTATION_TEST_OK');
+const fs=require('fs');
+const path=require('path');
+const root=path.resolve(__dirname,'..');
+
+const main=fs.readFileSync(path.join(root,'main.js'),'utf8');
+const capture=fs.readFileSync(path.join(root,'src/renderer/screenCapture.js'),'utf8');
+const ui=fs.readFileSync(path.join(root,'src/index.html'),'utf8');
+const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
+
+const checks=[
+  [pkg.version==='1.1.0','application version 1.1.0'],
+  [String(pkg.scripts['build:win']).startsWith('npm run build:native'),'native helper is built before Electron packaging'],
+  [main.includes("types:['screen','window']"),'screen + window desktopCapturer discovery'],
+  [main.includes('processName'),'application process metadata'],
+  [main.includes('screen:set-selection'),'main-process share selection state'],
+  [capture.includes('new Set()'),'multiple selectable sources'],
+  [capture.includes('this.active=new Map()'),'multiple simultaneous streams'],
+  [capture.includes('source_count'),'multi-source frame metadata'],
+  [capture.includes('SELECT APP')||capture.includes('selectScreens'),'application/window picker support'],
+  [ui.includes('sourcePicker')&&ui.includes('previewGrid'),'multi-source UI']
+];
+const failed=checks.filter(([ok])=>!ok).map(([,name])=>name);
+if(failed.length)throw new Error('Implementation checks failed: '+failed.join(', '));
+console.log('IMPLEMENTATION_TEST_OK');
