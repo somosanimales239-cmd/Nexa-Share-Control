@@ -1,4 +1,4 @@
-# NexaShareControl 1.3.0
+# NexaShareControl 1.4.0
 
 > FULL MANUAL DELIVERY replacement. This release keeps the complete NexaShareControl feature set, includes the Native Helper compiler fix from 1.2.1, and replaces the window picker with a Windows-native open-application inventory plus two capture paths so programs such as Unity cannot simply disappear from the Share list.
 
@@ -6,7 +6,7 @@ NexaShareControl is the dedicated Windows application for visual desktop sharing
 
 ## Release goal
 
-1.3.0 is a consolidated release, not a small patch. The main goal is: **if a normal visible Windows program/window is open, NexaShareControl should list it and allow it to be assigned to Share.**
+1.4.0 is a consolidated release, not a small patch. The main goal is: **if a normal visible Windows program/window is open, NexaShareControl should list it and allow it to be assigned to Share.**
 
 The Windows Native Helper (`EnumWindows`) is now the source of truth for open applications/windows. Electron `desktopCapturer` is used as the preferred capture backend, not as the only discovery list.
 
@@ -51,6 +51,24 @@ Desktop control starts OFF. Sharing begins only after the user explicitly assign
 
 No keylogging, physical-keystroke capture, UAC bypass, antivirus disabling, or hidden input activation is implemented.
 
+
+## Local Vision Control bridge — new in 1.4.0
+
+NexaShareControl now exposes a **loopback-only** control bridge at `127.0.0.1:47653` for the separate Nexa Vision Relay extension. This does **not** use or modify Nexa ChatGPT Browser Relay 1.6.1, Hostinger, Nexa Local, or Nexa AI Local Bridge.
+
+The bridge is deliberately locked down:
+
+- listens only on `127.0.0.1`;
+- accepts only Chrome-extension origins using the `NEXA-VISION-RELAY/1` client header;
+- first pairing requires a visible NexaShareControl approval dialog;
+- pairing rotates a random 256-bit bearer token and stores only its SHA-256 hash in NexaShareControl;
+- the paired extension origin is pinned;
+- actual mouse/keyboard commands are rejected unless the user has locally pressed **START SHARING SELECTED** and Desktop Control is active;
+- command IDs are deduplicated;
+- `CTRL + SHIFT + F12` remains authoritative emergency stop.
+
+The local bridge drives the existing `NexaShareControl.Native.exe` helper. It does not use PowerShell for mouse or keyboard input. Supported control includes pointer move/click/double-click/down/up/drag/wheel, text, keys, hotkeys, cursor position, window list/get/activate/active-window, monitor list, session stop, and emergency stop.
+
 ## Nexa App Builder Pro compatibility
 
 This complete Manual Delivery source preserves:
@@ -65,10 +83,10 @@ The Windows workflow configures Node.js and .NET 8, builds the Native Helper bef
 
 ## Expected Windows outputs
 
-- `NexaShareControl-Setup-1.3.0-x64.exe`
-- `NexaShareControl-Portable-1.3.0-x64.exe`
-- `NexaShareControl-1.3.0-x64.zip`
+- `NexaShareControl-Setup-1.4.0-x64.exe`
+- `NexaShareControl-Portable-1.4.0-x64.exe`
+- `NexaShareControl-1.4.0-x64.zip`
 
 ## Validation status
 
-The source package is structurally and statically validated before delivery. `WINDOWS BUILD VERIFIED` must only be claimed after Nexa App Builder Pro pushes 1.3.0 to GitHub Actions and the Windows workflow completes successfully.
+The source package is structurally and statically validated before delivery. `WINDOWS BUILD VERIFIED` must only be claimed after Nexa App Builder Pro pushes 1.4.0 to GitHub Actions and the Windows workflow completes successfully.

@@ -5,7 +5,7 @@ const root=path.resolve(__dirname,'..');
 const required=[
   'package.json','nexa.project.json','main.js','preload.js',
   'src/index.html','src/app.css','src/app.js','src/renderer/screenCapture.js',
-  'src/main/nativeHelper.js','src/main/transport.js','src/main/commandRouter.js',
+  'src/main/nativeHelper.js','src/main/transport.js','src/main/commandRouter.js','src/main/localControlServer.js',
   'native/NexaShareControl.Native/NexaShareControl.Native.csproj',
   'native/NexaShareControl.Native/Program.cs','native/NexaShareControl.Native/NativeInput.cs','native/NexaShareControl.Native/WindowControl.cs',
   'scripts/build-native.js','scripts/ui-smoke.js','scripts/validate-delivery.js','scripts/verify-artifacts.js',
@@ -32,7 +32,7 @@ for(const token of [
   'Test Installer, Apps and Features, and uninstaller'
 ])if(!workflow.includes(token))throw new Error(`Workflow contract missing: ${token}`);
 const main=fs.readFileSync(path.join(root,'main.js'),'utf8');
-for(const token of ["types:['screen','window']",'screen:set-selection','screen:resolve-sources','window-region','NEXA_STARTUP_SMOKE_FILE','helperAvailable','rendererReady'])if(!main.includes(token))throw new Error(`main.js contract missing: ${token}`);
+for(const token of ["types:['screen','window']",'screen:set-selection','screen:resolve-sources','window-region','NEXA_STARTUP_SMOKE_FILE','helperAvailable','rendererReady','LocalControlServer','localControlState'])if(!main.includes(token))throw new Error(`main.js contract missing: ${token}`);
 const capture=fs.readFileSync(path.join(root,'src/renderer/screenCapture.js'),'utf8');
 for(const token of ['MultiSourceCapture','maxSources=16','this.active=new Map()','snapshotBusy','source_count','share_set_id','ASSIGN APP','captureSourceId','refreshActiveSources'])if(!capture.includes(token))throw new Error(`Multi-source capture contract missing: ${token}`);
 console.log('PROJECT_VALIDATION_OK');

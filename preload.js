@@ -7,7 +7,7 @@ contextBridge.exposeInMainWorld('nexa', {
   startSharing: () => ipcRenderer.invoke('session:start-local'),
   stopSharing: () => ipcRenderer.invoke('session:stop'),
 
-  // v1.3.0: native open-window inventory + Electron/monitor capture backends.
+  // v1.4.0: native open-window inventory + Electron/monitor capture backends.
   listShareSources: () => ipcRenderer.invoke('screen:list-sources'),
   listScreenSources: () => ipcRenderer.invoke('screen:list-sources'),
   setShareSelection: sources => ipcRenderer.invoke('screen:set-selection', sources),

@@ -34,7 +34,7 @@ internal static class Program
         JsonObject Ok() => new() { ["id"] = id, ["ok"] = true };
         switch (cmd)
         {
-            case "ping": { var r = Ok(); r["pong"] = true; r["version"] = "1.3.0"; return r; }
+            case "ping": { var r = Ok(); r["pong"] = true; r["version"] = "1.4.0"; return r; }
             case "cursor.get": { var p = NativeInput.GetCursor(); var r = Ok(); r["x"] = p.X; r["y"] = p.Y; r["dpi_scale"] = MonitorInfo.GetScaleAtPoint(p.X,p.Y); return r; }
             case "mouse.move": NativeInput.Move(req); return Ok();
             case "mouse.click": NativeInput.Click(req["button"]?.GetValue<string>() ?? "left",1); return Ok();

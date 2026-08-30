@@ -6,7 +6,7 @@ const read=f=>fs.readFileSync(path.join(root,f),'utf8');
 const pkg=JSON.parse(read('package.json'));
 const project=JSON.parse(read('nexa.project.json'));
 const main=read('main.js'),capture=read('src/renderer/screenCapture.js'),html=read('src/index.html');
-const helper=read('src/main/nativeHelper.js'),native=read('native/NexaShareControl.Native/NativeInput.cs');
+const helper=read('src/main/nativeHelper.js'),native=read('native/NexaShareControl.Native/NativeInput.cs'),localControl=read('src/main/localControlServer.js');
 const workflow=read('.github/workflows/nexa-windows-build.yml');
 const checks=[
   [pkg.version===project.application_version,'package/project version alignment'],
@@ -26,7 +26,11 @@ const checks=[
   [native.includes('window_id')&&native.includes('ResolveTarget'),'window-targeted pointer coordinates'],
   [workflow.includes('NEXA_WINDOWS_ARTIFACT_DELIVERY_V3'),'Builder Windows Delivery V3 preserved'],
   [workflow.includes('helperAvailable'),'workflow requires Native Helper startup'],
-  [workflow.includes('NEXA_PACKAGED_STARTUP_REPORT'),'packaged startup evidence published']
+  [workflow.includes('NEXA_PACKAGED_STARTUP_REPORT'),'packaged startup evidence published'],
+  [main.includes('LocalControlServer')&&main.includes('Local Vision Control'),'loopback control server integrated'],
+  [localControl.includes('127.0.0.1')&&localControl.includes('/v1/pair')&&localControl.includes('/v1/command'),'loopback-only pair/command endpoints'],
+  [localControl.includes('desktop_control_not_active')&&localControl.includes('remoteInputEnabled'),'input gated by active local session'],
+  [localControl.includes('crypto.timingSafeEqual')&&localControl.includes('localControlTokenHash'),'token hash authentication']
 ];
 const failed=checks.filter(([ok])=>!ok).map(([,name])=>name);
 if(failed.length)throw new Error('Implementation checks failed: '+failed.join(', '));

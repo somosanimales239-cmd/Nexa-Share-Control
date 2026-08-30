@@ -29,3 +29,15 @@ test('universal open-window inventory has direct and visible-region capture path
   assert.match(capture,/captureSourceId/);
   assert.match(capture,/ASSIGN APP/);
 });
+
+const {safeOrigin,sha256}=require(path.join(root,'src/main/localControlServer.js'));
+test('local Vision Control accepts only extension origins',()=>{
+  assert.equal(safeOrigin('chrome-extension://abcdefghijklmnopqrstuvwxzyabcdef'),'');
+  assert.equal(safeOrigin('https://chatgpt.com'),'');
+  assert.equal(safeOrigin('chrome-extension://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'),'chrome-extension://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+});
+test('local Vision Control token hashing is deterministic and non-plaintext',()=>{
+  assert.equal(sha256('abc'),sha256('abc'));
+  assert.notEqual(sha256('abc'),'abc');
+  assert.equal(sha256('abc').length,64);
+});

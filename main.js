@@ -7,6 +7,7 @@ const {
   Tray,
   Menu,
   globalShortcut,
+  dialog,
   desktopCapturer,
   screen
 } = require('electron');
@@ -28,6 +29,7 @@ let security = null;
 let session = null;
 let router = null;
 let transport = null;
+let localControl = null;
 let startupComplete = false;
 let rendererReady = false;
 let startupSmokeWritten = false;
@@ -77,6 +79,11 @@ function transportState() {
   catch { return { connected:false, paired:false, transport:'OFFLINE' }; }
 }
 
+function localControlState() {
+  try { return localControl?.publicState?.() || { protocol:'NEXA-SHARE-LOCAL/1', running:false, host:'127.0.0.1', port:Number(config?.data?.localControlPort||47653), paired:!!config?.data?.localControlTokenHash }; }
+  catch { return { protocol:'NEXA-SHARE-LOCAL/1', running:false, host:'127.0.0.1', port:47653, paired:false }; }
+}
+
 function helperState() {
   try {
     return {
@@ -99,6 +106,7 @@ function state() {
     session: sessionState(),
     transport: transportState(),
     helper: helperState(),
+    localControl: localControlState(),
     shareSelection: selectedShareSources
   };
 }
@@ -436,7 +444,7 @@ function registerIpc() {
     }
   });
 
-  // v1.3.0: monitors and open application/windows are selectable at the same time.
+  // v1.4.0: monitors and open application/windows are selectable at the same time.
   ipcMain.handle('screen:list-sources', async () => {
     try { return await discoverShareSources(); }
     catch (error) {
@@ -511,6 +519,7 @@ function registerIpc() {
       transport:transportState(),
       session:sessionState(),
       shareSelection:selectedShareSources,
+      localControl:localControlState(),
       monitors:[],
       windows:[],
       cursor:null
@@ -565,6 +574,7 @@ function maybeWriteStartupSmoke() {
     startupIssues,
     helper:helperStatus,
     helperAvailable:!!helperStatus.available,
+    localControl:localControlState(),
     userData:app.getPath('userData'),
     selectedSources:selectedShareSources.length,
     generatedAt:new Date().toISOString()
@@ -593,7 +603,7 @@ async function initializeBackgroundSystems() {
   try {
     const { AppLogger } = require('./src/main/logger');
     logger = new AppLogger(app.getPath('userData'));
-    logger.info('NexaShareControl 1.3.0 startup begun');
+    logger.info('NexaShareControl 1.4.0 startup begun');
     for (const issue of startupIssues) logger.warn(`pre-logger ${issue.area}: ${issue.message}`);
   } catch (error) { noteIssue('Logger', error); }
 
@@ -616,6 +626,32 @@ async function initializeBackgroundSystems() {
     helper = helper || null;
     noteIssue('Native helper', error);
   }
+
+  try {
+    if (config && helper?.proc && session) {
+      const { LocalControlServer } = require('./src/main/localControlServer');
+      localControl = new LocalControlServer({
+        helper, session, config, logger:logger || { info(){}, warn(){}, error(){} },
+        onStateChanged:()=>pushState(),
+        approvePair:async ({origin,client,version}) => {
+          try {
+            const result = await dialog.showMessageBox(win || undefined, {
+              type:'question',
+              title:'NexaShareControl · Local Vision Control',
+              message:'Allow Nexa Vision Relay to control this computer while Desktop Control is ACTIVE?',
+              detail:`Client: ${client}${version ? ` ${version}` : ''}\nOrigin: ${origin}\n\nThis grants mouse/keyboard/window control only through the local 127.0.0.1 bridge. CTRL+SHIFT+F12 remains the emergency stop.`,
+              buttons:['Allow','Deny'],
+              defaultId:1,
+              cancelId:1,
+              noLink:true
+            });
+            return result.response===0;
+          } catch (error) { noteIssue('Local control pairing dialog', error); return false; }
+        }
+      });
+      await localControl.start();
+    }
+  } catch (error) { noteIssue('Local Vision Control', error); }
 
   try {
     if (config && security && session) {
@@ -684,6 +720,7 @@ app.on('before-quit', async () => {
   app.isQuitting = true;
   try { globalShortcut.unregisterAll(); } catch {}
   try { await transport?.stop?.(); } catch {}
+  try { await localControl?.stop?.(); } catch {}
   try { await helper?.stop?.(); } catch {}
 });
 

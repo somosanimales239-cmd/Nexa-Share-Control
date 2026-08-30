@@ -457,6 +457,7 @@ jobs:
           $startup = Get-Content $report -Raw | ConvertFrom-Json
           if (-not $startup.ok -or -not $startup.rendererReady -or -not $startup.startupComplete) { throw "Packaged startup evidence is incomplete" }
           if (-not $startup.helperAvailable) { throw "Packaged NexaShareControl opened but Native Helper did not start" }
+          if (-not $startup.localControl.running) { throw "Packaged NexaShareControl opened but Local Vision Control loopback did not start" }
           Copy-Item $report "release/delivery/nexa-packaged-startup-report.json" -Force
           "NEXA_PACKAGED_STARTUP_REPORT=release/delivery/nexa-packaged-startup-report.json" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           Get-Content $report
@@ -527,6 +528,7 @@ jobs:
             $installedStartup = Get-Content $startupReport -Raw | ConvertFrom-Json
             if (-not $installedStartup.ok -or -not $installedStartup.rendererReady -or -not $installedStartup.startupComplete) { throw "Installed application startup evidence is incomplete" }
             if (-not $installedStartup.helperAvailable) { throw "Installed application started without the Native Helper" }
+            if (-not $installedStartup.localControl.running) { throw "Installed application started without Local Vision Control loopback" }
             return $appExe[0]
           }
           function Uninstall-Nexa {
